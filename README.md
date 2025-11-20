@@ -53,8 +53,8 @@ This allows the model to "learn" the new relationship instantly when volatility 
 ### Local Development
 ```bash
 # 1. Clone the repo
-git clone [https://github.com/yourusername/statarb-demo.git](https://github.com/yourusername/statarb-demo.git)
-cd statarb-demo
+git clone https://github.com/allenwang0/statarb.git
+cd statarb
 
 # 2. Install dependencies
 pip install -r requirements.txt

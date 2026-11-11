@@ -92,24 +92,30 @@ def evaluate(data, train_end=None, tuned=True, kalman_params=None, ols_params=No
     if len(train) <= warmup:
         raise DataError(f"The train window needs more than {warmup} bars")
 
-    evaluation = Evaluation(
-        warmup_start=data.index[0],
-        train_start=train.index[warmup],
-        train_end=train_end,
-        test_start=test_index[0],
-        test_end=test_index[-1],
-        stats=pair_stats(train["asset_y"], train["asset_x"]),
-    )
     given = {"kalman": kalman_params or {}, "ols": ols_params or {}}
+    train_start = train.index[warmup]
+    test_start = test_index[0]
+    runs = {}
     for name, model in (("Kalman", "kalman"), ("Rolling OLS", "ols")):
         params = tune(data, train_end, model, base_params) if tuned else given[model]
         result = Backtester(data, model=model, **base_params, **params).run()
-        evaluation.runs[name] = ModelRun(
+        runs[name] = ModelRun(
             params=params,
             result=result,
-            train=compute_metrics(result, start=evaluation.train_start, end=train_end),
-            test=compute_metrics(result, start=evaluation.test_start),
+            train=compute_metrics(result, start=train_start, end=train_end),
+            test=compute_metrics(result, start=test_start),
         )
+    # After the backtests, which reject degenerate prices with a clear error.
+    stats = pair_stats(train["asset_y"], train["asset_x"])
+    evaluation = Evaluation(
+        warmup_start=data.index[0],
+        train_start=train_start,
+        train_end=train_end,
+        test_start=test_start,
+        test_end=test_index[-1],
+        stats=stats,
+        runs=runs,
+    )
     return evaluation
 
 

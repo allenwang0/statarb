@@ -3,5 +3,6 @@ __pycache__/
 *.pyc
 .DS_Store
 venv/
-.env.pytest_cache/
+.env
+.pytest_cache/
 .hypothesis/

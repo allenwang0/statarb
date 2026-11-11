@@ -70,7 +70,17 @@ def test_model_z_score_is_standardized():
 def test_rolling_z_score_is_still_available():
     data = make_pair(n=200, beta=1.0, phi=0.9, level=50.0, seed=2)
     z = Backtester(data, z_method='rolling', z_window=30).run()['z_score']
-    assert z.iloc[:89].isna().all() and z.iloc[89:].notna().all()
+    # First z needs 30 innovations before it: bars 60..89, so bar 90.
+    assert z.iloc[:90].isna().all() and z.iloc[90:].notna().all()
+
+
+def test_rolling_z_does_not_include_its_own_bar():
+    # A z-score that puts bar t's innovation in its own std can never exceed
+    # (w-1)/sqrt(w), about 5.3 for w=30, however large the shock.
+    data = make_pair(n=200, beta=1.0, noise=0.01, level=50.0, seed=2)
+    data.iloc[150, 1] += 50.0 * 0.5  # about 50 noise sd
+    z = Backtester(data, z_method='rolling', z_window=30).run()['z_score']
+    assert z.iloc[150] > 10
 
 
 pair_params = dict(

@@ -15,6 +15,8 @@ class Backtester:
         self.warmup = warmup                   # Bars used to fit the filter, no trading
         self.z_method = z_method               # 'model': error / sqrt(S), 'rolling': error / rolling std
         self.z_window = z_window               # Window for the rolling z-score
+        if z_method not in ('model', 'rolling'):
+            raise ValueError(f"z_method must be 'model' or 'rolling', got {z_method!r}")
 
         # Sizing and costs
         self.initial_capital = initial_capital
@@ -62,12 +64,14 @@ class Backtester:
                 beta, alpha, spread_error, S = self.kf.update(x_price, y_price)
 
                 if self.z_method == 'rolling':
-                    spreads.append(spread_error)
+                    # Standardize by the previous z_window innovations only;
+                    # including bar t caps |z| at (w-1)/sqrt(w).
                     if len(spreads) < self.z_window:
                         z_score = np.nan # Not enough history yet
                     else:
                         std_spread = np.std(spreads[-self.z_window:])
                         z_score = spread_error / std_spread if std_spread > 0 else 0
+                    spreads.append(spread_error)
                 else:
                     z_score = spread_error / np.sqrt(S)
 

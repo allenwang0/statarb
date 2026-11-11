@@ -89,3 +89,13 @@ def test_failed_ticker_does_not_blame_the_good_one(monkeypatch):
                  ticker_y='KO', ticker_x='XYZQQ')
     assert not at.exception
     assert at.error[0].value.startswith('No price data for XYZQQ between')
+
+
+def test_unusable_pair_is_reported(monkeypatch):
+    # Two tickers whose prices are exact multiples leave no spread; the
+    # filter's warm-up check must reach the user as a message, not a crash.
+    prices = synthetic_prices(['PEP', 'KO'])
+    prices['KO'] = 2.0 * prices['PEP']
+    at = run_app(monkeypatch, fake_download(prices))
+    assert not at.exception
+    assert 'exact linear function' in at.error[0].value

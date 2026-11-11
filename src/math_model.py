@@ -1,5 +1,12 @@
 import numpy as np
 
+from src.data import DataError
+
+# Residual variance below this fraction of var(y) is float rounding, not
+# noise: Y is an exact linear function of X (for example the same ticker
+# twice) and z = error / sqrt(S) would divide by roughly zero.
+MIN_RELATIVE_RESIDUAL_VAR = 1e-12
+
 
 class KalmanFilterReg:
     """
@@ -35,11 +42,18 @@ class KalmanFilterReg:
         """
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
+        if len(x) <= self.n:
+            raise DataError(f"Warm-up needs more than {self.n} bars, got {len(x)}")
+        if np.ptp(x) == 0:
+            raise DataError("X does not move during the warm-up, so beta is not identified")
         H = np.column_stack([x, np.ones(len(x))])
         coef, _, _, _ = np.linalg.lstsq(H, y, rcond=None)
         resid = y - H @ coef
         self.state = coef
         self.R = np.dot(resid, resid) / (len(x) - self.n)
+        if not self.R > MIN_RELATIVE_RESIDUAL_VAR * np.var(y):
+            raise DataError("Y is an exact linear function of X during the warm-up; "
+                            "there is no spread to trade")
         self.P = self.R * np.linalg.inv(H.T @ H)
         # Scale the system noise by the per-bar OLS covariance so that
         # delta means the same thing at any price level

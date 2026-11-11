@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from src.data import DataError
 from src.math_model import KalmanFilterReg
 
 class Backtester:
@@ -20,17 +21,20 @@ class Backtester:
         self.gross_notional = gross_notional   # Gross exposure as a fraction of equity
         self.cost_rate = (commission_bps + slippage_bps) / 1e4  # Charged on traded notional
 
-        # Portfolio State
-        self.position = 0 # 1 = Long Spread, -1 = Short Spread, 0 = Flat
-        self.cash = initial_capital
-        self.equity_curve = []
 
     def run(self):
         x = self.data['asset_x'].to_numpy(dtype=float)
         y = self.data['asset_y'].to_numpy(dtype=float)
         n = len(x)
         if n <= self.warmup:
-            raise ValueError(f"Need more than {self.warmup} bars of data, got {n}")
+            raise DataError(f"Need more than {self.warmup} bars of data, got {n}")
+        if not (np.isfinite(x).all() and np.isfinite(y).all()):
+            raise DataError("Prices contain missing or infinite values")
+        if (x <= 0).any() or (y <= 0).any():
+            raise DataError("Prices must be positive")
+
+        position = 0  # 1 = long spread, -1 = short spread, 0 = flat
+        cash = self.initial_capital
 
         # Warm-up: fit the filter on the first bars, take no positions
         self.kf.initialize(x[:self.warmup], y[:self.warmup])
@@ -40,6 +44,8 @@ class Backtester:
         z_scores = np.full(n, np.nan)
         positions = np.zeros(n)
         cash_hist = np.zeros(n)
+        equity_hist = np.zeros(n)
+        cost_hist = np.zeros(n)
         shares_x_hist = np.zeros(n)
         shares_y_hist = np.zeros(n)
         spreads = []
@@ -66,57 +72,63 @@ class Backtester:
                     z_score = spread_error / np.sqrt(S)
 
                 # 2. Generate Signal on the close of bar t
-                new_position = self.position
+                new_position = position
 
                 # Mean Reversion Logic
-                if self.position == 0:
+                if position == 0:
                     if z_score > self.entry_threshold:
                         new_position = -1 # Sell the spread (Short Y, Long X)
                     elif z_score < -self.entry_threshold:
                         new_position = 1  # Buy the spread (Long Y, Short X)
 
-                elif self.position == 1: # Long Spread
+                elif position == 1: # Long Spread
                     if z_score >= -self.exit_threshold:
                         new_position = 0 # Exit
 
-                elif self.position == -1: # Short Spread
+                elif position == -1: # Short Spread
                     if z_score <= self.exit_threshold:
                         new_position = 0 # Exit
 
                 # 3. Execute at the close: 1 share of Y against -beta shares of X
-                if new_position != self.position:
+                if new_position != position:
                     if new_position == 0:
                         target_y = 0.0
                         target_x = 0.0
                     else:
-                        equity = self.cash + shares_x * x_price + shares_y * y_price
+                        equity = cash + shares_x * x_price + shares_y * y_price
+                        if equity <= 0:
+                            # Sizing from non-positive equity would flip or
+                            # zero the trade; a bankrupt account stays flat.
+                            new_position = 0
                         units = self.gross_notional * equity / (y_price + abs(beta) * x_price)
                         target_y = new_position * units
                         target_x = -beta * target_y
                     trade_y = target_y - shares_y
                     trade_x = target_x - shares_x
                     cost = self.cost_rate * (abs(trade_y) * y_price + abs(trade_x) * x_price)
-                    self.cash -= trade_y * y_price + trade_x * x_price + cost
+                    cash -= trade_y * y_price + trade_x * x_price + cost
+                    cost_hist[t] = cost
                     shares_x = target_x
                     shares_y = target_y
-                    self.position = new_position
+                    position = new_position
 
                 hedge_ratios[t] = beta
                 z_scores[t] = z_score
 
             # 4. Mark to Market
-            self.equity_curve.append(self.cash + shares_x * x_price + shares_y * y_price)
-            positions[t] = self.position
-            cash_hist[t] = self.cash
+            equity_hist[t] = cash + shares_x * x_price + shares_y * y_price
+            positions[t] = position
+            cash_hist[t] = cash
             shares_x_hist[t] = shares_x
             shares_y_hist[t] = shares_y
 
         return pd.DataFrame({
-            'equity': self.equity_curve,
+            'equity': equity_hist,
             'hedge_ratio': hedge_ratios,
             'z_score': z_scores,
             'position': positions,
             'cash': cash_hist,
             'shares_x': shares_x_hist,
-            'shares_y': shares_y_hist
+            'shares_y': shares_y_hist,
+            'cost': cost_hist
         }, index=self.data.index)

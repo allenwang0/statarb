@@ -82,7 +82,11 @@ if st.sidebar.button("Run Backtest", type="primary"):
 
         # 2. Run Backtest
         bt = Backtester(data, entry_threshold=entry_z, exit_threshold=exit_z, warmup=warmup, delta=delta)
-        results = bt.run()
+        try:
+            results = bt.run()
+        except DataError as e:
+            st.error(f"{ticker_y}/{ticker_x}: {e}.")
+            st.stop()
 
         # 3. Calculate Metrics
         tot_ret, sharpe, max_dd = calculate_metrics(results['equity'])

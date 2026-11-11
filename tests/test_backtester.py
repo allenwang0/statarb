@@ -1,8 +1,10 @@
 import numpy as np
+import pytest
 from hypothesis import given, settings, strategies as st
 
 from conftest import make_pair
 from src.backtester import Backtester
+from src.data import DataError
 
 
 def step_pair():
@@ -99,3 +101,67 @@ def test_doubling_costs_never_raises_final_equity(seed, beta, phi, level, cost_b
         for c in (cost_bps, 2 * cost_bps)
     ]
     assert final[1] <= final[0] * (1 + 1e-12)
+
+
+def test_run_twice_gives_the_same_result():
+    # run() used to keep cash, position and the equity list on the instance,
+    # so a second call started from the first call's end state and crashed.
+    data = make_pair(n=300, beta=1.0, phi=0.9, level=50.0, seed=1)
+    bt = Backtester(data)
+    first, second = bt.run(), bt.run()
+    assert first.equals(second)
+
+
+@settings(max_examples=40, deadline=None)
+@given(**pair_params)
+def test_each_bar_is_self_financing(seed, beta, phi, level, cost_bps):
+    # The only ways equity can change on bar t: price moves on the shares
+    # held since t-1, and costs paid on bar t's fills. A sign error in cash
+    # or a cost charged twice breaks this; equity == cash + holdings alone
+    # cannot catch either because equity is defined that way.
+    data = make_pair(n=250, beta=beta, phi=phi, level=level, seed=seed)
+    res = Backtester(data, entry_threshold=1.0, commission_bps=cost_bps,
+                     slippage_bps=cost_bps).run()
+    prev = res.shift(1).iloc[1:]
+    d_px = data.diff().iloc[1:]
+    expected = (prev['shares_y'] * d_px['asset_y'] + prev['shares_x'] * d_px['asset_x']
+                - res['cost'].iloc[1:])
+    assert np.allclose(res['equity'].diff().iloc[1:], expected, rtol=1e-9, atol=1e-6)
+    fills = res['position'].diff().fillna(0) != 0
+    if cost_bps > 0:
+        assert (res['cost'][fills] > 0).all() and (res['cost'][~fills] == 0).all()
+
+
+@pytest.mark.parametrize('bad', [np.nan, np.inf, 0.0, -5.0])
+def test_bad_prices_are_rejected(bad):
+    # One NaN used to turn the filter state into NaN for every later bar and
+    # freeze equity without an error.
+    data = make_pair(n=200, beta=1.0, phi=0.9, level=50.0, seed=2)
+    data.iloc[100, 1] = bad
+    with pytest.raises(DataError):
+        Backtester(data).run()
+
+
+def test_flat_x_during_warmup_is_rejected():
+    # With X constant the warm-up regression cannot separate beta from
+    # alpha; the backtest used to run and silently never trade.
+    data = make_pair(n=200, beta=1.0, phi=0.9, level=50.0, seed=2)
+    data.iloc[:60, 0] = 50.0
+    with pytest.raises(DataError, match="does not move"):
+        Backtester(data).run()
+
+
+def test_exact_linear_pair_is_rejected():
+    # Zero residual means R ~ 1e-28 and z = error / sqrt(S) is rounding noise.
+    data = make_pair(n=200, beta=1.0, phi=0.9, level=50.0, seed=2)
+    data['asset_y'] = 2.0 * data['asset_x']
+    with pytest.raises(DataError, match="exact linear"):
+        Backtester(data).run()
+
+
+def test_bankrupt_account_does_not_reopen():
+    # Sizing is gross_notional * equity / price; with equity <= 0 that flips
+    # the side of the trade. A wiped-out account must stay flat.
+    data = make_pair(n=300, beta=1.0, phi=0.9, level=50.0, seed=1)
+    res = Backtester(data, initial_capital=-1.0, entry_threshold=0.5).run()
+    assert (res['position'] == 0).all()

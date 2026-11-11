@@ -138,7 +138,7 @@ def test_each_bar_is_self_financing(seed, beta, phi, level, cost_bps):
                 - res['cost'].iloc[1:])
     assert np.allclose(res['equity'].diff().iloc[1:], expected, rtol=1e-9, atol=1e-6)
     fills = res['position'].diff().fillna(0) != 0
-    if cost_bps > 0:
+    if cost_bps >= 0.01:  # denormal bps round the cost to zero
         assert (res['cost'][fills] > 0).all() and (res['cost'][~fills] == 0).all()
 
 
@@ -175,3 +175,23 @@ def test_bankrupt_account_does_not_reopen():
     data = make_pair(n=300, beta=1.0, phi=0.9, level=50.0, seed=1)
     res = Backtester(data, initial_capital=-1.0, entry_threshold=0.5).run()
     assert (res['position'] == 0).all()
+
+
+
+def test_ols_baseline_goes_through_the_same_rules():
+    # The comparison is only fair if the baseline uses the same warm-up,
+    # signal, sizing and cost code. Swapping the model must change betas
+    # but keep the accounting.
+    data = make_pair(n=400, beta=1.5, alpha=0.2, phi=0.9, level=50.0, seed=3)
+    ols = Backtester(data, model="ols", commission_bps=5.0).run()
+    assert (ols["position"].iloc[:60] == 0).all() and (ols["position"] != 0).any()
+    prev = ols.shift(1).iloc[1:]
+    d_px = data.diff().iloc[1:]
+    expected = (prev["shares_y"] * d_px["asset_y"] + prev["shares_x"] * d_px["asset_x"]
+                - ols["cost"].iloc[1:])
+    assert np.allclose(ols["equity"].diff().iloc[1:], expected)
+    entries = ols[(ols["position"].diff() != 0) & (ols["position"] != 0)]
+    px = data.loc[entries.index]
+    gross = entries["shares_y"].abs() * px["asset_y"] + entries["shares_x"].abs() * px["asset_x"]
+    # Entries come from flat, so equity before the fill is the previous bar's.
+    assert np.allclose(gross, ols["equity"].shift(1)[entries.index])

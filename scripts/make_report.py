@@ -112,6 +112,7 @@ def main():
     parser.add_argument("--start", default="2018-01-01")
     parser.add_argument("--end", default="2024-12-31")
     parser.add_argument("--synthetic-only", action="store_true")
+    parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
     args = parser.parse_args()
 
     sha = subprocess.run(
@@ -139,7 +140,8 @@ def main():
         sections.append(section(title, label, data, ev, args.y, args.x))
         md.append(markdown(title, label, ev))
 
-    OUT_DIR.mkdir(exist_ok=True)
+    out_dir = args.out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
     html = (
         "<!doctype html><html><head><meta charset='utf-8'><title>statarb report</title>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
@@ -148,10 +150,10 @@ def main():
         "table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px}</style>"
         f"</head><body><h1>statarb report</h1><p>{header}</p>{''.join(sections)}</body></html>"
     )
-    (OUT_DIR / "report.html").write_text(html)
-    (OUT_DIR / "results.md").write_text("\n\n".join(md) + "\n")
+    (out_dir / "report.html").write_text(html)
+    (out_dir / "results.md").write_text("\n\n".join(md) + "\n")
     print("\n\n".join(md))
-    print(f"\nWrote {OUT_DIR / 'report.html'} and {OUT_DIR / 'results.md'}")
+    print(f"\nWrote {out_dir / 'report.html'} and {out_dir / 'results.md'}")
 
 
 if __name__ == "__main__":

@@ -100,8 +100,11 @@ def show_backtest():
     adf_ok = stats.adf_pvalue <= SIGNIFICANCE
     tiles[1].metric(f"{'✓ pass' if adf_ok else '✗ fail'}: ADF p (spread)", f"{stats.adf_pvalue:.3f}")
     tiles[2].metric("Half-life (days)", f"{stats.half_life:.1f}")
-    tiles[3].metric("Train window", f"{ev.train_start:%Y-%m-%d} to {ev.train_end:%Y-%m-%d}")
-    tiles[4].metric("Test window", f"{ev.test_start:%Y-%m-%d} to {ev.test_end:%Y-%m-%d}")
+    for tile, label, start, end in (
+        (tiles[3], "Train window", ev.train_start, ev.train_end),
+        (tiles[4], "Test window", ev.test_start, ev.test_end),
+    ):
+        tile.markdown(f"{label}  \n**{start:%Y-%m-%d}**  \nto **{end:%Y-%m-%d}**")
     st.caption("Pair statistics use the train window only, with a static OLS hedge ratio.")
     if not eg_ok:
         st.warning(

@@ -35,7 +35,8 @@ def _layout(fig, height, y_title, **kwargs):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         **kwargs,
     )
-    fig.update_yaxes(title_text=y_title)
+    if y_title is not None:
+        fig.update_yaxes(title_text=y_title)
     return fig
 
 

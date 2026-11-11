@@ -67,8 +67,13 @@ def test_every_tile_and_chart_renders(monkeypatch):
     assert not at.exception and not at.error
     labels = [m.label for m in at.metric]
     assert labels[0] == "✓ pass: Engle-Granger p"
-    assert {"Half-life (days)", "Train window", "Test window"} <= set(labels)
-    assert len(chart_specs(at)) == 5
+    assert "Half-life (days)" in labels
+    assert any(m.value.startswith("Test window") for m in at.markdown)
+    specs = chart_specs(at)
+    assert len(specs) == 5
+    for spec in specs:  # every panel says what it measures and in what unit
+        axes = [v for k, v in spec["layout"].items() if k.startswith("yaxis")]
+        assert axes and all(a.get("title", {}).get("text") for a in axes)
     assert not at.warning  # the synthetic pair is cointegrated
     table = at.dataframe[0].value
     assert list(table.columns) == [

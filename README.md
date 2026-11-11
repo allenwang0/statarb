@@ -1,28 +1,25 @@
 # ⚡ Statistical Arbitrage with Kalman Filters
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-app-url-here.streamlit.app/)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A **low-latency, event-driven backtesting engine** for pairs trading strategies. 
+A daily-bar backtester for pairs trading strategies.
 
-Unlike traditional moving-average models, this engine uses a **Kalman Filter** to dynamically estimate the hedge ratio (beta) between two assets in real-time, allowing for faster adaptation to changing market regimes without the lag of rolling windows.
-
-**[👉 View Live Dashboard](https://your-app-url-here.streamlit.app/)**
+Instead of a rolling-window regression, it uses a **Kalman Filter** to update the hedge ratio (beta) between two assets one bar at a time. How fast the estimate adapts depends on the `delta` setting. It has not yet been compared against rolling OLS.
 
 ---
 
 ## 🚀 Key Features
 
 ### 1. Mathematical Core (The "Quant" Side)
-* **Dynamic State Estimation:** Implements a linear Kalman Filter from scratch (using `numpy` matrix algebra) to track the unobservable "true" spread between assets.
-* **Regime Adaptation:** Automatically adjusts the hedge ratio ($\beta$) as the correlation between assets drifts, avoiding the "lookback bias" of fixed-window OLS.
+* **Dynamic State Estimation:** Implements a linear Kalman Filter from scratch (using `numpy` matrix algebra) to track the hedge ratio and intercept of the pair, treated as hidden states.
+* **Regime Adaptation:** Adjusts the hedge ratio ($\beta$) as the relationship between assets drifts. Compared with fixed-window OLS, the trade-off is lag against noise, set by `delta`.
 * **Mean Reversion:** Generates trading signals based on Z-Score deviation from the predicted state.
 
 ### 2. Engineering Architecture (The "Dev" Side)
-* **Event-Driven Engine:** Simulates a real-time feed by iterating row-by-row. Prevents **look-ahead bias** by strictly separating *current* observation from *future* data.
-* **Interactive Visualization:** Built with **Streamlit** and **Plotly** for institutional-grade dashboards (Equity Curves, Drawdown analysis, interactive zooming).
-* **Robust Error Handling:** Automated data validation and connection handling for Yahoo Finance APIs.
+* **Bar-by-Bar Loop:** Iterates over daily bars. Each bar books P&L on the shares held since the previous bar, then updates the filter, then trades at that bar's close. Positions are sized from equity, and commission and slippage are charged on every fill.
+* **Interactive Visualization:** Built with **Streamlit** and **Plotly** for interactive charts of the equity curve, z-score and hedge ratio. Max drawdown is shown as a single number.
+* **Error Handling:** Reports Yahoo Finance download failures, tickers with no data, and date ranges too short for the warm-up. There is no retry.
 
 ---
 
@@ -44,7 +41,7 @@ We treat the hedge ratio $\beta_t$ as a "hidden state" that follows a random wal
 2.  **Update:** Correct the prediction using the new incoming price observation (Measurement).
     $$\hat{x}_{k|k} = \hat{x}_{k|k-1} + K_k (z_k - H_k \hat{x}_{k|k-1})$$
 
-This allows the model to "learn" the new relationship instantly when volatility spikes.
+Because the state follows a random walk, recent bars count more than old ones. How quickly the filter follows a change is set by `delta`; it does not adapt instantly.
 
 ---
 
@@ -61,3 +58,8 @@ pip install -r requirements.txt
 
 # 3. Run the dashboard
 streamlit run app.py
+
+# 4. Run the tests (offline, synthetic data)
+pip install -r requirements-dev.txt
+pytest
+```

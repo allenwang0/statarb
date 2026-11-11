@@ -78,3 +78,14 @@ def test_other_errors_are_not_swallowed(monkeypatch):
     at = run_app(monkeypatch, fake_download(synthetic_prices(['PEP', 'KO'])))
     assert not at.error
     assert 'bug' in at.exception[0].message
+
+
+def test_failed_ticker_does_not_blame_the_good_one(monkeypatch):
+    # yfinance adds an 'Adj Close' column holding only the failed ticker.
+    # The app used to read that column and report KO, which downloaded
+    # fine, as missing.
+    from test_data import one_ticker_failed_download
+    at = run_app(monkeypatch, lambda tickers, **kw: one_ticker_failed_download(),
+                 ticker_y='KO', ticker_x='XYZQQ')
+    assert not at.exception
+    assert at.error[0].value.startswith('No price data for XYZQQ between')

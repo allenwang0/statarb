@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
+from yfinance.exceptions import YFException
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from src.backtester import Backtester
-from src.data import select_pair
+from src.data import DataError, close_prices, select_pair
 
 # Page Config
 st.set_page_config(page_title="StatArb Dashboard", layout="wide")
@@ -57,29 +58,17 @@ if st.sidebar.button("Run Backtest", type="primary"):
         # 1. Data Fetching
         tickers = [ticker_x, ticker_y]
         try:
-            raw_data = yf.download(tickers, start=start_date, end=end_date, progress=False)
-        except Exception as e:
+            raw_data = yf.download(tickers, start=start_date, end=end_date,
+                                   auto_adjust=True, progress=False)
+        except (OSError, YFException) as e:  # curl_cffi network errors subclass OSError
             st.error(f"Download from Yahoo Finance failed: {e}")
             st.stop()
 
-        # Handle MultiIndex columns if present
-        if isinstance(raw_data.columns, pd.MultiIndex):
-            # Try to access 'Adj Close', fallback to 'Close'
-            if 'Adj Close' in raw_data.columns.get_level_values(0):
-                data = raw_data['Adj Close']
-            elif 'Close' in raw_data.columns.get_level_values(0):
-                data = raw_data['Close']
-            else:
-                st.error("Data source missing price columns.")
-                st.stop()
-        else:
-            data = raw_data
-
         # Map columns by ticker name
         try:
-            data = select_pair(data, ticker_y=ticker_y, ticker_x=ticker_x)
-        except KeyError as e:
-            st.error(f"{e.args[0]} between {start_date} and {end_date}.")
+            data = select_pair(close_prices(raw_data), ticker_y=ticker_y, ticker_x=ticker_x)
+        except DataError as e:
+            st.error(f"{e} between {start_date} and {end_date}.")
             st.stop()
 
         # Drop NaNs

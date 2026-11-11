@@ -3,85 +3,120 @@ import numpy as np
 from src.math_model import KalmanFilterReg
 
 class Backtester:
-    def __init__(self, data, entry_threshold=2.0, exit_threshold=0.0):
+    def __init__(self, data, entry_threshold=2.0, exit_threshold=0.0,
+                 initial_capital=100000.0, gross_notional=1.0,
+                 commission_bps=1.0, slippage_bps=1.0, warmup=60,
+                 delta=1e-4, z_method='model', z_window=30):
         self.data = data.copy() # Expects columns ['asset_x', 'asset_y']
-        self.kf = KalmanFilterReg()
+        self.kf = KalmanFilterReg(delta=delta)
         self.entry_threshold = entry_threshold # Z-score to open trade
         self.exit_threshold = exit_threshold   # Z-score to close trade
+        self.warmup = warmup                   # Bars used to fit the filter, no trading
+        self.z_method = z_method               # 'model': error / sqrt(S), 'rolling': error / rolling std
+        self.z_window = z_window               # Window for the rolling z-score
+
+        # Sizing and costs
+        self.initial_capital = initial_capital
+        self.gross_notional = gross_notional   # Gross exposure as a fraction of equity
+        self.cost_rate = (commission_bps + slippage_bps) / 1e4  # Charged on traded notional
 
         # Portfolio State
         self.position = 0 # 1 = Long Spread, -1 = Short Spread, 0 = Flat
-        self.cash = 100000.0
+        self.cash = initial_capital
         self.equity_curve = []
 
     def run(self):
+        x = self.data['asset_x'].to_numpy(dtype=float)
+        y = self.data['asset_y'].to_numpy(dtype=float)
+        n = len(x)
+        if n <= self.warmup:
+            raise ValueError(f"Need more than {self.warmup} bars of data, got {n}")
+
+        # Warm-up: fit the filter on the first bars, take no positions
+        self.kf.initialize(x[:self.warmup], y[:self.warmup])
+
         # Lists to store history for analysis
-        hedge_ratios = []
+        hedge_ratios = np.full(n, np.nan)
+        z_scores = np.full(n, np.nan)
+        positions = np.zeros(n)
+        cash_hist = np.zeros(n)
+        shares_x_hist = np.zeros(n)
+        shares_y_hist = np.zeros(n)
         spreads = []
-        z_scores = []
+        shares_x = 0.0
+        shares_y = 0.0
 
-        # Warmup period for Kalman Filter (burn first 20 days)
-        # Event-Driven Loop
-        for t, row in self.data.iterrows():
-            x_price = row['asset_x']
-            y_price = row['asset_y']
+        for t in range(n):
+            x_price = x[t]
+            y_price = y[t]
 
-            # 1. Update Math Model
-            beta, alpha, spread_error, _ = self.kf.update(x_price, y_price)
+            if t >= self.warmup:
+                # 1. Update Math Model with bar t (P&L for bar t is already
+                # carried by the shares held since t-1)
+                beta, alpha, spread_error, S = self.kf.update(x_price, y_price)
 
-            # Calculate standard deviation of the spread (simple rolling window)
-            spreads.append(spread_error)
-            if len(spreads) < 30:
-                std_spread = 1.0 # Avoid division by zero during warmup
-            else:
-                std_spread = np.std(spreads[-30:])
+                if self.z_method == 'rolling':
+                    spreads.append(spread_error)
+                    if len(spreads) < self.z_window:
+                        z_score = np.nan # Not enough history yet
+                    else:
+                        std_spread = np.std(spreads[-self.z_window:])
+                        z_score = spread_error / std_spread if std_spread > 0 else 0
+                else:
+                    z_score = spread_error / np.sqrt(S)
 
-            z_score = spread_error / std_spread if std_spread > 0 else 0
+                # 2. Generate Signal on the close of bar t
+                new_position = self.position
 
-            # 2. Generate Signal & Execute
-            # Note: We use yesterday's state to trade today to be conservative,
-            # or trade on the close (as shown here).
+                # Mean Reversion Logic
+                if self.position == 0:
+                    if z_score > self.entry_threshold:
+                        new_position = -1 # Sell the spread (Short Y, Long X)
+                    elif z_score < -self.entry_threshold:
+                        new_position = 1  # Buy the spread (Long Y, Short X)
 
-            prev_position = self.position
+                elif self.position == 1: # Long Spread
+                    if z_score >= -self.exit_threshold:
+                        new_position = 0 # Exit
 
-            # Mean Reversion Logic
-            if self.position == 0:
-                if z_score > self.entry_threshold:
-                    self.position = -1 # Sell the spread (Short Y, Long X)
-                elif z_score < -self.entry_threshold:
-                    self.position = 1  # Buy the spread (Long Y, Short X)
+                elif self.position == -1: # Short Spread
+                    if z_score <= self.exit_threshold:
+                        new_position = 0 # Exit
 
-            elif self.position == 1: # Long Spread
-                if z_score >= -self.exit_threshold:
-                    self.position = 0 # Exit
+                # 3. Execute at the close: 1 share of Y against -beta shares of X
+                if new_position != self.position:
+                    if new_position == 0:
+                        target_y = 0.0
+                        target_x = 0.0
+                    else:
+                        equity = self.cash + shares_x * x_price + shares_y * y_price
+                        units = self.gross_notional * equity / (y_price + abs(beta) * x_price)
+                        target_y = new_position * units
+                        target_x = -beta * target_y
+                    trade_y = target_y - shares_y
+                    trade_x = target_x - shares_x
+                    cost = self.cost_rate * (abs(trade_y) * y_price + abs(trade_x) * x_price)
+                    self.cash -= trade_y * y_price + trade_x * x_price + cost
+                    shares_x = target_x
+                    shares_y = target_y
+                    self.position = new_position
 
-            elif self.position == -1: # Short Spread
-                if z_score <= self.exit_threshold:
-                    self.position = 0 # Exit
+                hedge_ratios[t] = beta
+                z_scores[t] = z_score
 
-            # 3. Mark to Market (simplified PnL calculation)
-            # In a real engine, you track specific share counts.
-            # Here we approximate roughly: PnL += Position * (Change in Spread)
-            # This is a simplification for the MVP.
-
-            if len(self.equity_curve) > 0:
-                # Price change vector
-                px_change_y = y_price - self.data.iloc[self.data.index.get_loc(t)-1]['asset_y']
-                px_change_x = x_price - self.data.iloc[self.data.index.get_loc(t)-1]['asset_x']
-
-                # PnL = QtyY * dY + QtyX * dX
-                # Hedge Ratio dictates: 1 unit of Y against 'beta' units of X
-                daily_pnl = prev_position * (px_change_y - beta * px_change_x)
-                curr_equity = self.equity_curve[-1] + daily_pnl
-            else:
-                curr_equity = 100000.0
-
-            self.equity_curve.append(curr_equity)
-            hedge_ratios.append(beta)
-            z_scores.append(z_score)
+            # 4. Mark to Market
+            self.equity_curve.append(self.cash + shares_x * x_price + shares_y * y_price)
+            positions[t] = self.position
+            cash_hist[t] = self.cash
+            shares_x_hist[t] = shares_x
+            shares_y_hist[t] = shares_y
 
         return pd.DataFrame({
             'equity': self.equity_curve,
             'hedge_ratio': hedge_ratios,
-            'z_score': z_scores
+            'z_score': z_scores,
+            'position': positions,
+            'cash': cash_hist,
+            'shares_x': shares_x_hist,
+            'shares_y': shares_y_hist
         }, index=self.data.index)

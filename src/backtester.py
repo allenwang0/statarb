@@ -27,7 +27,7 @@ class Backtester:
             y_price = row['asset_y']
 
             # 1. Update Math Model
-            beta, alpha, spread_error = self.kf.update(x_price, y_price)
+            beta, alpha, spread_error, _ = self.kf.update(x_price, y_price)
 
             # Calculate standard deviation of the spread (simple rolling window)
             spreads.append(spread_error)

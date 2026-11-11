@@ -6,3 +6,7 @@ venv/
 .env
 .pytest_cache/
 .hypothesis/
+reports/
+.venv/
+*.egg-info/
+build/

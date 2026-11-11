@@ -6,6 +6,7 @@ from itertools import product
 import pandas as pd
 
 from src.backtester import DEFAULT_WARMUP, Backtester
+from src.data import DataError
 from src.metrics import compute_metrics
 from src.stats import PairStats, pair_stats
 
@@ -26,6 +27,7 @@ class ModelRun:
 
 @dataclass
 class Evaluation:
+    warmup_start: pd.Timestamp
     train_start: pd.Timestamp
     train_end: pd.Timestamp
     test_start: pd.Timestamp
@@ -85,12 +87,13 @@ def evaluate(data, train_end=None, tuned=True, kalman_params=None, ols_params=No
     train = data.loc[:train_end]
     test_index = data.index[data.index > train_end]
     if len(test_index) < 2:
-        raise ValueError("The test window needs at least two bars")
+        raise DataError("The test window needs at least two bars")
     warmup = base_params.get("warmup", DEFAULT_WARMUP)
     if len(train) <= warmup:
-        raise ValueError(f"The train window needs more than {warmup} bars")
+        raise DataError(f"The train window needs more than {warmup} bars")
 
     evaluation = Evaluation(
+        warmup_start=data.index[0],
         train_start=train.index[warmup],
         train_end=train_end,
         test_start=test_index[0],

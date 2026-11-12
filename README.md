@@ -36,7 +36,7 @@ and the state $s_t = [\beta_t, \alpha_t]$ follows a random walk, $s_t = s_{t-1} 
 
 ## Quickstart
 
-These commands were run from a clean clone on macOS with Python 3.15. The pinned dependencies need Python 3.12 or later.
+These commands were run from a clean clone on macOS with Python 3.11 and 3.12, the versions CI tests.
 
 ```bash
 git clone https://github.com/allenwang0/statarb.git
@@ -48,6 +48,8 @@ python3 -m venv .venv
 .venv/bin/ruff check . && .venv/bin/mypy src
 .venv/bin/python scripts/make_report.py      # writes reports/report.html and reports/results.md
 ```
+
+`python scripts/make_report.py --card` also writes `site/card.json` for the portfolio site: test-window net equity for both models and the out-of-sample Kalman Sharpe, no prices. It refuses to run on a dirty tree so the recorded commit matches the code.
 
 ## Results
 
@@ -98,4 +100,4 @@ statarb stays a standalone tool for one pair at a time. [quantsim](https://githu
 
 ## License
 
-No license file has been added yet, so default copyright applies.
+MIT. See [LICENSE](LICENSE).

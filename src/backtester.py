@@ -99,7 +99,7 @@ class Backtester:
         position = 0
         cash = float(self.initial_capital)
         shares_x = shares_y = 0.0
-        innovations = []
+        innovations: list[float] = []
 
         for t in range(n):
             px_x, px_y = x[t], y[t]

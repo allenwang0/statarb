@@ -19,9 +19,9 @@ def close_prices(raw):
         raise DataError("Yahoo Finance returned no data")
     if not isinstance(raw.columns, pd.MultiIndex):
         return raw
-    if 'Close' not in raw.columns.get_level_values(0):
+    if "Close" not in raw.columns.get_level_values(0):
         raise DataError("Yahoo Finance returned no 'Close' prices")
-    return raw['Close']
+    return raw["Close"]
 
 
 def select_pair(prices, ticker_y, ticker_x):
@@ -36,10 +36,9 @@ def select_pair(prices, ticker_y, ticker_x):
         raise DataError("Enter both tickers")
     if ticker_y == ticker_x:
         raise DataError(f"Y and X are both {ticker_y}; pick two different tickers")
-    missing = [t for t in (ticker_y, ticker_x)
-               if t not in prices.columns or prices[t].isna().all()]
+    missing = [t for t in (ticker_y, ticker_x) if t not in prices.columns or prices[t].isna().all()]
     if missing:
         raise DataError(f"No price data for {', '.join(missing)}")
     data = prices[[ticker_x, ticker_y]].copy()
-    data.columns = ['asset_x', 'asset_y']
+    data.columns = ["asset_x", "asset_y"]
     return data

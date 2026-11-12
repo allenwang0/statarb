@@ -56,9 +56,7 @@ if sidebar.button("Run backtest", type="primary", key="run"):
 def download(tickers):
     """Adjusted daily closes, one column per ticker. Stops the app on failure."""
     try:
-        raw = yf.download(
-            tickers, start=start_date, end=end_date, auto_adjust=True, progress=False
-        )
+        raw = yf.download(tickers, start=start_date, end=end_date, auto_adjust=True, progress=False)
     except (OSError, YFException) as e:  # curl_cffi network errors subclass OSError
         st.error(f"Download from Yahoo Finance failed: {e}")
         st.stop()
@@ -94,11 +92,11 @@ def show_backtest():
     stats = ev.stats
     tiles = st.columns(5)
     eg_ok = stats.cointegrated
-    tiles[0].metric(
-        f"{'✓ pass' if eg_ok else '✗ fail'}: Engle-Granger p", f"{stats.eg_pvalue:.3f}"
-    )
+    tiles[0].metric(f"{'✓ pass' if eg_ok else '✗ fail'}: Engle-Granger p", f"{stats.eg_pvalue:.3f}")
     adf_ok = stats.adf_pvalue <= SIGNIFICANCE
-    tiles[1].metric(f"{'✓ pass' if adf_ok else '✗ fail'}: ADF p (spread)", f"{stats.adf_pvalue:.3f}")
+    tiles[1].metric(
+        f"{'✓ pass' if adf_ok else '✗ fail'}: ADF p (spread)", f"{stats.adf_pvalue:.3f}"
+    )
     tiles[2].metric("Half-life (days)", f"{stats.half_life:.1f}")
     for tile, label, start, end in (
         (tiles[3], "Train window", ev.train_start, ev.train_end),

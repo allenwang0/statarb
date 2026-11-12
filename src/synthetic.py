@@ -2,8 +2,17 @@ import numpy as np
 import pandas as pd
 
 
-def make_pair(n=500, beta=1.0, alpha=0.0, noise=0.01, phi=0.0, level=1.0,
-              beta_step_at=None, beta_after=None, seed=0):
+def make_pair(
+    n=500,
+    beta=1.0,
+    alpha=0.0,
+    noise=0.01,
+    phi=0.0,
+    level=1.0,
+    beta_step_at=None,
+    beta_after=None,
+    seed=0,
+):
     """Synthetic (not market) pair: Y = level*alpha + beta*X + level*eps.
 
     X is a geometric random walk starting at `level`. eps is AR(1) with
@@ -21,4 +30,4 @@ def make_pair(n=500, beta=1.0, alpha=0.0, noise=0.01, phi=0.0, level=1.0,
         betas[beta_step_at:] = beta_after
     y = level * alpha + betas * x + level * eps
     index = pd.bdate_range("2000-01-03", periods=n)
-    return pd.DataFrame({'asset_x': x, 'asset_y': y}, index=index)
+    return pd.DataFrame({"asset_x": x, "asset_y": y}, index=index)

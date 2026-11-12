@@ -86,8 +86,8 @@ class RollingOLS:
 
     def __init__(self, window=60):
         self.window = window
-        self.xs = deque(maxlen=window)
-        self.ys = deque(maxlen=window)
+        self.xs: deque[float] = deque(maxlen=window)
+        self.ys: deque[float] = deque(maxlen=window)
         self.state = np.zeros(2)
         self.resid_var = 1.0
         self.hth_inv = np.eye(2)

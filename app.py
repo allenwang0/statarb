@@ -152,7 +152,9 @@ def show_backtest():
 
     st.subheader("Does the model fit?")
     st.caption(charts.diagnostics_takeaway(kalman))
-    st.plotly_chart(charts.innovation_diagnostics(kalman), width="stretch")
+    left, right = st.columns(2)
+    left.plotly_chart(charts.innovation_histogram(kalman), width="stretch")
+    right.plotly_chart(charts.innovation_acf(kalman), width="stretch")
 
 
 def load_selected_pair():

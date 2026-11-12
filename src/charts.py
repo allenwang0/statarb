@@ -216,7 +216,9 @@ def innovation_histogram(result):
     )
     fig.update_xaxes(title_text="z (innovation / sqrt(S))")
     fig.update_layout(title="Standardized innovations vs N(0,1)")
-    return _layout(fig, 340, "density")
+    _layout(fig, 340, "density")
+    fig.update_layout(legend=dict(orientation="v", x=0.98, xanchor="right", y=0.98, yanchor="top"))
+    return fig
 
 
 def innovation_acf(result):

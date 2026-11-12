@@ -204,41 +204,35 @@ def autocorrelation(values, lags=ACF_LAGS):
     return np.array([np.dot(v[:-k], v[k:]) / denom for k in range(1, lags + 1)])
 
 
-def innovation_diagnostics(result):
+def innovation_histogram(result):
     z = result["z_score"].dropna().to_numpy()
-    fig = make_subplots(
-        rows=1,
-        cols=2,
-        horizontal_spacing=0.12,
-        subplot_titles=(
-            "Standardized innovations vs N(0,1)",
-            f"Autocorrelation, lags 1-{ACF_LAGS}",
-        ),
-    )
+    fig = go.Figure()
     fig.add_trace(
-        go.Histogram(x=z, histnorm="probability density", name="z", marker_color=BLUE, opacity=0.7),
-        row=1,
-        col=1,
+        go.Histogram(x=z, histnorm="probability density", name="z", marker_color=BLUE, opacity=0.7)
     )
     grid = np.linspace(-4, 4, 200)
     fig.add_trace(
-        go.Scatter(x=grid, y=norm.pdf(grid), name="N(0,1)", line=dict(color=GREY, dash="dash")),
-        row=1,
-        col=1,
+        go.Scatter(x=grid, y=norm.pdf(grid), name="N(0,1)", line=dict(color=GREY, dash="dash"))
     )
-    acf = autocorrelation(z)
+    fig.update_xaxes(title_text="z (innovation / sqrt(S))")
+    fig.update_layout(title="Standardized innovations vs N(0,1)")
+    return _layout(fig, 340, "density")
+
+
+def innovation_acf(result):
+    z = result["z_score"].dropna().to_numpy()
+    fig = go.Figure()
     fig.add_trace(
-        go.Bar(x=list(range(1, ACF_LAGS + 1)), y=acf, name="ACF", marker_color=BLUE), row=1, col=2
+        go.Bar(x=list(range(1, ACF_LAGS + 1)), y=autocorrelation(z), name="ACF", marker_color=BLUE)
     )
     band = Z_95 / np.sqrt(len(z))
     for level in (band, -band):
-        fig.add_hline(y=level, line=dict(color=GREY, dash="dash", width=1), row=1, col=2)
-    fig.update_xaxes(title_text="z", row=1, col=1)
-    fig.update_xaxes(title_text="lag (days)", row=1, col=2)
-    fig.update_yaxes(title_text="density", row=1, col=1)
-    fig.update_yaxes(title_text="autocorrelation", row=1, col=2)
-    fig.update_layout(height=360, margin=dict(l=10, r=10, t=60, b=10), showlegend=False)
-    return fig
+        fig.add_hline(y=level, line=dict(color=GREY, dash="dash", width=1))
+    fig.update_xaxes(title_text="lag (days)")
+    fig.update_layout(
+        title=f"Autocorrelation, lags 1-{ACF_LAGS}, 95% band dashed", showlegend=False
+    )
+    return _layout(fig, 340, "autocorrelation")
 
 
 def diagnostics_takeaway(result):

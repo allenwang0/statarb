@@ -70,7 +70,7 @@ def test_every_tile_and_chart_renders(monkeypatch):
     assert "Half-life (days)" in labels
     assert any(m.value.startswith("Test window") for m in at.markdown)
     specs = chart_specs(at)
-    assert len(specs) == 5
+    assert len(specs) == 6
     for spec in specs:  # every panel says what it measures and in what unit
         axes = [v for k, v in spec["layout"].items() if k.startswith("yaxis")]
         assert axes and all(a.get("title", {}).get("text") for a in axes)

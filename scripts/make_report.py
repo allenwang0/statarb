@@ -46,7 +46,8 @@ def section(title, label, data, ev, ticker_y, ticker_x):
         charts.hedge_ratio_chart(
             ev.runs["Kalman"].result, ev.runs["Rolling OLS"].result, ticker_y, ticker_x
         ),
-        charts.innovation_diagnostics(ev.runs["Kalman"].result),
+        charts.innovation_histogram(ev.runs["Kalman"].result),
+        charts.innovation_acf(ev.runs["Kalman"].result),
     ]
     html = [f"<h2>{title}</h2>", f"<p><strong>{label}</strong></p>", f"<p>{takeaway(ev)}</p>"]
     html.append(f"<p>{stats_line(ev)}</p>")

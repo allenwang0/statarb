@@ -5,12 +5,15 @@ real pair, each tuned on a train window and reported on a test window.
     python scripts/make_report.py                    # PEP/KO, 2018-01-01 to 2024-12-31
     python scripts/make_report.py --y XOM --x CVX --start 2015-01-01 --end 2024-12-31
     python scripts/make_report.py --synthetic-only   # offline
+    python scripts/make_report.py --card             # also site/card.json, from a clean tree
 
 The real-pair section downloads from Yahoo Finance at run time; reports/ is
 git-ignored so no prices are committed.
 """
 
 import argparse
+import json
+import shlex
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -27,7 +30,11 @@ from src.metrics import metrics_table  # noqa: E402
 from src.research import evaluate, takeaway  # noqa: E402
 from src.synthetic import make_pair  # noqa: E402
 
-OUT_DIR = Path(__file__).resolve().parents[1] / "reports"
+ROOT = Path(__file__).resolve().parents[1]
+OUT_DIR = ROOT / "reports"
+CARD = ROOT / "site" / "card.json"
+CARD_MAX_POINTS = 500
+TAKEAWAY_MAX = 140
 # Synthetic pair: 1,500 bars, beta 1.5, AR(1) spread with phi 0.95 (half-life
 # 13.5 bars), noise 1% of the price level. Seeded so the numbers are stable.
 SYNTHETIC = dict(n=1500, beta=1.5, alpha=0.2, noise=0.01, phi=0.95, level=50.0, seed=42)
@@ -101,6 +108,63 @@ def to_markdown(table):
     return "\n".join([header, rule, *rows])
 
 
+def downsample(series, limit=CARD_MAX_POINTS):
+    step = max(1, -(-len(series) // limit))
+    return series.iloc[::step]
+
+
+def build_card(ev, ticker_y, ticker_x, sha, command, generated_at):
+    """Portfolio-site card (schema_version 1): test-window net equity for both models."""
+    k_sharpe = ev.runs["Kalman"].test["sharpe"]
+    o_sharpe = ev.runs["Rolling OLS"].test["sharpe"]
+    verb = "beat" if k_sharpe > o_sharpe else "trailed"
+    card_takeaway = (
+        f"Out of sample, the Kalman hedge {verb} rolling OLS by {abs(k_sharpe - o_sharpe):.2f} "
+        f"Sharpe ({k_sharpe:.2f} vs {o_sharpe:.2f}) after costs."
+    )
+    if len(card_takeaway) > TAKEAWAY_MAX:
+        raise ValueError(f"takeaway has {len(card_takeaway)} characters, limit {TAKEAWAY_MAX}")
+    series = []
+    for name, style in (("Kalman", "solid"), ("Rolling OLS", "dashed")):
+        equity = ev.runs[name].result["equity"].loc[ev.test_start : ev.test_end]
+        points = [[f"{d:%Y-%m-%d}", round(float(v), 2)] for d, v in downsample(equity).items()]
+        series.append({"name": name, "style": style, "points": points})
+    return {
+        "schema_version": 1,
+        "repo": "statarb",
+        "sha": sha,
+        "generated_at": generated_at,
+        "command": command,
+        "data_note": (
+            f"{ticker_y}/{ticker_x}, test window {ev.test_start:%Y-%m-%d} to "
+            f"{ev.test_end:%Y-%m-%d}. Yahoo Finance daily closes; equity only, no prices."
+        ),
+        "metric": {
+            "label": "Out-of-sample Sharpe after costs",
+            "value": float(k_sharpe),
+            "unit": "",
+            "higher_is_better": True,
+        },
+        "takeaway": card_takeaway,
+        "chart": {
+            "type": "line",
+            "x_label": "Date",
+            "x_unit": "",
+            "x_scale": "time",
+            "y_label": "Net equity",
+            "y_unit": "USD",
+            "y_scale": "linear",
+            "series": series,
+        },
+    }
+
+
+def git(*args):
+    return subprocess.run(
+        ["git", *args], capture_output=True, text=True, check=True, cwd=ROOT
+    ).stdout.strip()
+
+
 def real_pair(ticker_y, ticker_x, start, end):
     import yfinance as yf
 
@@ -116,7 +180,10 @@ def main():
     parser.add_argument("--end", default="2024-12-31")
     parser.add_argument("--synthetic-only", action="store_true")
     parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
+    parser.add_argument("--card", action="store_true", help="also write site/card.json")
     args = parser.parse_args()
+    if args.card and (args.synthetic_only or git("status", "--porcelain")):
+        sys.exit("--card needs the real pair and a clean git tree, so its sha matches the code")
 
     sha = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=False
@@ -157,6 +224,22 @@ def main():
     (out_dir / "results.md").write_text("\n\n".join(md) + "\n")
     print("\n\n".join(md))
     print(f"\nWrote {out_dir / 'report.html'} and {out_dir / 'results.md'}")
+
+    if args.card:
+        command = " ".join(
+            shlex.quote(a) for a in ["python", "scripts/make_report.py", *sys.argv[1:]]
+        )
+        card = build_card(
+            ev,
+            args.y,
+            args.x,
+            sha=git("rev-parse", "HEAD"),
+            command=command,
+            generated_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
+        CARD.parent.mkdir(exist_ok=True)
+        CARD.write_text(json.dumps(card, indent=1) + "\n")
+        print(f"Wrote {CARD.relative_to(ROOT)}: {card['takeaway']}")
 
 
 if __name__ == "__main__":

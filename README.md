@@ -85,7 +85,7 @@ On the synthetic pair the Kalman filter also trailed rolling OLS on the test win
 
 ## Relationship to quantsim
 
-statarb stays a standalone tool for one pair at a time. [quantsim](https://github.com/allenwang0/quantsim) is an event-driven engine with its own `PairsTradingStrategy`. `tests/test_kalman.py` here is the contract for the filter, and quantsim's `tests/test_kalman.py` repeats the same cases so the two filters cannot drift apart.
+statarb stays a standalone tool for one pair at a time. [quantsim](https://github.com/allenwang0/quantsim) is an event-driven engine with its own `PairsTradingStrategy`. `tests/test_kalman.py` here is the contract for the filter.
 
 ## Limitations
 

@@ -61,7 +61,11 @@ def section(title, label, data, ev, ticker_y, ticker_x):
 
 def results_table(ev):
     return metrics_table(
-        {f"{name}, {w}": getattr(run, w) for name, run in ev.runs.items() for w in ("train", "test")}
+        {
+            f"{name}, {w}": getattr(run, w)
+            for name, run in ev.runs.items()
+            for w in ("train", "test")
+        }
     )
 
 
@@ -99,9 +103,7 @@ def to_markdown(table):
 def real_pair(ticker_y, ticker_x, start, end):
     import yfinance as yf
 
-    raw = yf.download(
-        [ticker_x, ticker_y], start=start, end=end, auto_adjust=True, progress=False
-    )
+    raw = yf.download([ticker_x, ticker_y], start=start, end=end, auto_adjust=True, progress=False)
     return select_pair(close_prices(raw), ticker_y=ticker_y, ticker_x=ticker_x).dropna()
 
 

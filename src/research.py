@@ -73,8 +73,7 @@ def tune(data, train_end, model, base_params):
     return best
 
 
-def evaluate(data, train_end=None, tuned=True, kalman_params=None, ols_params=None,
-             **base_params):
+def evaluate(data, train_end=None, tuned=True, kalman_params=None, ols_params=None, **base_params):
     """
     Run Kalman and rolling OLS on the full series with parameters chosen on
     the train window (or given), and report metrics for each window. Both

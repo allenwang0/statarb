@@ -5,11 +5,11 @@ from src.math_model import KalmanFilterReg, RollingOLS
 
 
 def run_filter(data, warmup, delta):
-    x, y = data['asset_x'].values, data['asset_y'].values
+    x, y = data["asset_x"].values, data["asset_y"].values
     kf = KalmanFilterReg(delta=delta)
     kf.initialize(x[:warmup], y[:warmup])
     out = [kf.update(x[t], y[t]) for t in range(warmup, len(x))]
-    beta, alpha, error, S = (np.array(v) for v in zip(*out))
+    beta, alpha, error, S = (np.array(v) for v in zip(*out, strict=True))
     return beta, alpha, error, S
 
 
@@ -18,7 +18,7 @@ def test_initialize_starts_from_warmup_ols_fit():
     # innovation is the whole price of Y, which fires a trade on bar 1.
     data = make_pair(n=60, beta=1.5, alpha=0.2, level=50.0, seed=3)
     kf = KalmanFilterReg()
-    kf.initialize(data['asset_x'].values, data['asset_y'].values)
+    kf.initialize(data["asset_x"].values, data["asset_y"].values)
     assert abs(kf.state[0] - 1.5) < 0.1
     resid_var = (50.0 * 0.01) ** 2
     assert 0.5 * resid_var < kf.R < 2.0 * resid_var

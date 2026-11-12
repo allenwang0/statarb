@@ -46,3 +46,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "conftest", "test_data"]

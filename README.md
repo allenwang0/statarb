@@ -15,7 +15,7 @@ A pairs-trading research app. A Kalman filter (a model that updates with every n
 
 ```bash
 git clone https://github.com/allenwang0/statarb.git && cd statarb
-python3 -m venv .venv
+python3.12 -m venv .venv   # Python 3.11 or 3.12
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/streamlit run app.py
 ```

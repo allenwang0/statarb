@@ -7,7 +7,7 @@ name = "statarb"
 version = "0.1.0"
 description = "Daily-bar pairs-trading backtester with a Kalman-filter hedge ratio, cointegration tests and a rolling-OLS baseline."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "numpy==2.4.6",
     "pandas==3.1.1",

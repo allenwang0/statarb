@@ -1,0 +1,11 @@
+{
+ "command": "python scripts/case_study.py --fetch",
+ "code_sha": "ad4b4c07ab9d145bb0f34a2c82de48b7cb5243e4",
+ "date": "2026-11-22",
+ "machine": "Apple M5 Pro",
+ "os": "macOS 27.0.1",
+ "python": "Python 3.12.13",
+ "load_average_before_run": "3.88 5.25 6.15",
+ "wall_seconds": 10.9,
+ "note": "Deterministic given data/prices.csv; machine and load affect only run time."
+}

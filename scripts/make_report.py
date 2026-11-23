@@ -270,14 +270,16 @@ def _card(span, label, metric, cmp, foot):
     )
 
 
-def _figure(fid, title, sub, legend=""):
+def _figure(fid, title, sub, legend="", caption=""):
     return (
         f'<figure class="figure" aria-labelledby="f-{fid}"><div class="fig-head"><div>'
         f'<h3 id="f-{fid}">{escape(title)}</h3><p class="sub">{escape(sub)}</p></div>'
         '<div class="seg" role="radiogroup" aria-label="View" data-view-toggle>'
         '<button role="radio" aria-checked="true" data-value="chart">Chart</button>'
         '<button role="radio" aria-checked="false" data-value="table">Table</button></div></div>'
-        f'{legend}<div id="c-{fid}"></div><div id="t-{fid}" hidden></div></figure>'
+        f'{legend}<div id="c-{fid}"></div><div id="t-{fid}" hidden></div>'
+        + (f"<figcaption>{caption}</figcaption>" if caption else "")
+        + "</figure>"
     )
 
 
@@ -356,10 +358,11 @@ def render_page(real, synth, sha, date, prices_note):
                 if lost
                 else "Kalman ends the test window ahead",
                 f"Cumulative return on the test window, % · {pair} · after costs",
+                caption="Return since the last bar of the training window, net of costs. "
+                "Both hedges use parameters picked on the training window only. One window, "
+                "so there is no spread across runs.",
             )
-            + "<figcaption>Return since the last bar of the training window, net of costs. "
-            "Both hedges use parameters picked on the training window only. One window, "
-            "so there is no spread across runs.</figcaption></section>"
+            + "</section>"
         )
         cards = [
             _card(
@@ -403,8 +406,8 @@ def render_page(real, synth, sha, date, prices_note):
             [[name, *row] for name, row in tm.iterrows()],
         )
         body += (
-            "<figcaption>Sharpe and Sortino use daily returns, annualized with 252 days and "
-            "a zero risk-free rate. Hit rate counts closed trades only.</figcaption>"
+            '<p class="note">Sharpe and Sortino use daily returns, annualized with 252 days and '
+            "a zero risk-free rate. Hit rate counts closed trades only.</p>"
         )
         body += _caveat(
             "One window.",
@@ -447,11 +450,11 @@ def render_page(real, synth, sha, date, prices_note):
                     "beta",
                     "Hedge ratio over the full period",
                     f"Shares of {tx} per share of {ty} · every {BETA_EVERY}th trading day",
-                )
-                + "<figcaption>The Kalman estimate carries a ± 2 standard deviation band, "
-                f"{band:.2f} wide on average, so it is barely visible at this scale. Shown from "
-                f"the end of the warm-up ({_iso(ev.train_start)}); the test "
-                f"window starts {_iso(ev.test_start)}.</figcaption>",
+                    caption="The Kalman estimate carries a ± 2 standard deviation band, "
+                    f"{band:.2f} wide on average, so it is barely visible at this scale. Shown from "
+                    f"the end of the warm-up ({_iso(ev.train_start)}); the test "
+                    f"window starts {_iso(ev.test_start)}.",
+                ),
             )
         )
 
@@ -469,10 +472,10 @@ def render_page(real, synth, sha, date, prices_note):
                     "acf",
                     "Autocorrelation of the standardized errors",
                     f"Lags 1–{dg['lags']} days · n = {dg['n']:,} days · full period",
-                )
-                + "<figcaption>The horizontal lines mark the 95 % band for white noise "
-                "(± 1.96 / √n). Points outside it are autocorrelation the model leaves "
-                "unexplained.</figcaption>",
+                    caption="The horizontal lines mark the 95 % band for white noise "
+                    "(± 1.96 / √n). Points outside it are autocorrelation the model leaves "
+                    "unexplained.",
+                ),
             )
         )
 
@@ -563,13 +566,12 @@ def render_page(real, synth, sha, date, prices_note):
     )
 
     data["split_label"] = "test starts"
-    footer = f'Generated from commit <span class="mono">{escape(sha or "unknown")}</span>' + (
+    footer = f'Data from commit <span class="mono">{escape(sha or "unknown")}</span>' + (
         f" · {escape(date)}" if date else ""
     )
 
     def kit(name):
-        # report.js mentions "</script>" in a comment; escape it for inlining.
-        return (KIT / name).read_text().replace("</script", "<\\/script")
+        return (KIT / name).read_text()
 
     page = (DOCS / "report.template.html").read_text()
     for key, value in (

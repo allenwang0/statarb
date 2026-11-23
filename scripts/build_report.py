@@ -33,20 +33,9 @@ README_END = "<!-- results:end -->"
 EN = "–"
 MINUS = "−"
 TRADING_DAYS = 252
-NBSP = "\u00a0"
-UNIT_RE = re.compile(
-    r"(?<=\d) (?=(?:bp|days?|years?|s|tickers|pairs|configurations|tunings|test days)\b)"
-)
-
 LOCAL_CSS = """
-.toc { margin-top: calc(-1 * var(--space-5)); }
-.toc ol { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: var(--space-4) 0 0;
-  border-top: 1px solid var(--border); list-style: none; font-size: var(--fs-small); }
-.toc a { display: inline-flex; align-items: center; min-height: 44px; color: var(--text-2); text-decoration: none; }
-.toc a:hover { color: var(--text); }
 .c-dash { stroke-dasharray: 5 4; }
 .shots { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: var(--card-gap); align-items: start; }
-.shots img { display: block; width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .shots figcaption { font-size: var(--fs-small); color: var(--text-2); margin-top: var(--space-3); }
 .shots figure { margin: 0; }
 @media (max-width: 734px) { .shots { grid-template-columns: minmax(0, 1fr); } .shots .wide { display: none; } }
@@ -187,22 +176,6 @@ def pct(v):
 # ---------------------------------------------------------------- charts
 
 
-def legend(items, x0, width):
-    """items: (name, stroke class, dashed, accent). Wraps to new rows; returns (svg parts, rows)."""
-    parts, kx, ky, rows = [], x0, 12, 1
-    for name, cls, dash, accent in items:
-        w = 24 + rk.text_width(name) + 18
-        if kx + w - 18 > width and kx > x0:
-            kx, ky, rows = x0, ky + 20, rows + 1
-        parts.append(
-            f'<path class="{cls}{" c-dash" if dash else ""}" stroke-width="2.5" '
-            f'd="M{coord(kx)} {ky}H{coord(kx + 18)}"/>'
-        )
-        parts.append(svg_text(kx + 24, ky + 4, name, "c-label c-hi" if accent else "c-label"))
-        kx += w
-    return parts, rows
-
-
 def to_day(s):
     return datetime.date.fromisoformat(s).toordinal()
 
@@ -234,17 +207,9 @@ def time_chart(
     ys = [v for s in series for _, v in s["points"]]
     yt = rk.nice_ticks(0 if y_zero else min(ys), max(ys), 4 if phone else 5)
     ml = max(rk.text_width(fmt_y(t), 12) for t in yt) + 12
-    key = [
-        (
-            s["name"],
-            "c-stroke-accent" if s["cls"] == "accent" else "c-stroke-muted",
-            s.get("dash"),
-            s["cls"] == "accent",
-        )
-        for s in series
-    ]
-    key_parts, key_rows = legend(key, 0, width) if show_legend else ([], 0)
-    mr, mt, mb = 12, 32 + 20 * key_rows, 30
+    key = [(s["name"], "line", s["cls"] == "accent", bool(s.get("dash"))) for s in series]
+    key_svg, key_h = rk.legend(key, width=width) if show_legend else (Raw(""), 0)
+    mr, mt, mb = 12, 32 + key_h, 30
     x0, x1 = min(xs), max(xs)
     px = lambda d: ml + (width - ml - mr) * (d - x0) / (x1 - x0)
     py = lambda v: height - mb - (height - mt - mb) * (v - yt[0]) / (yt[-1] - yt[0])
@@ -283,7 +248,7 @@ def time_chart(
         parts.append(
             f'<path class="{cls}{" c-dash" if s.get("dash") else ""}" stroke-width="{s.get("w", 1.5)}" d="{d}"/>'
         )
-    parts.extend(key_parts)
+    parts.append(key_svg)
     if y_title:
         parts.append(svg_text(ml, mt - 16, y_title, "c-title"))
     return rk.svg(uid, width, height, title, desc, "".join(parts))
@@ -351,16 +316,11 @@ def sweep_chart(sweep, *, uid, width, title, desc):
     vals = [c[m]["test_sharpe"] for c in sweep for m in MODELS]
     yt = rk.nice_ticks(min(vals), max(vals), 5)
     key = [
-        (
-            f"{m}, {'next-day' if lag else 'same-close'} fill",
-            "c-stroke-accent" if m == "Rolling OLS" else "c-stroke-muted",
-            bool(lag),
-            m == "Rolling OLS",
-        )
+        (f"{m}, {'next-day' if lag else 'same-close'} fill", "line", m == "Rolling OLS", bool(lag))
         for m, lag in lines
     ]
-    key_parts, key_rows = legend(key, 0, width)
-    ml, mr, mt, mb = 40, 12, 36 + 20 * key_rows, 44
+    key_svg, key_h = rk.legend(key, width=width)
+    ml, mr, mt, mb = 40, 12, 36 + key_h, 44
     px = lambda c: ml + (width - ml - mr) * (c - costs[0]) / (costs[-1] - costs[0])
     py = lambda v: height - mb - (height - mt - mb) * (v - yt[0]) / (yt[-1] - yt[0])
     parts = []
@@ -371,7 +331,7 @@ def sweep_chart(sweep, *, uid, width, title, desc):
         parts.append(svg_text(ml - 6, py(t) + 4, f"{t:g}".replace("-", MINUS), "c-tick", "end"))
     for c in costs:
         parts.append(svg_text(px(c), height - mb + 18, f"{c:g}", "c-tick", "middle"))
-    parts.extend(key_parts)
+    parts.append(key_svg)
     for m, lag in lines:
         pts = sorted((c["cost_bps"], c[m]["test_sharpe"]) for c in sweep if c["lag"] == lag)
         accent = m == "Rolling OLS"
@@ -420,7 +380,7 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
     return [
         (
             "E1",
-            f"Rolling OLS test-window Sharpe {sh(d['ols'])}, Kalman {sh(d['kal'])}, {d['cost']:g} bp per fill, "
+            f"Rolling OLS test-window Sharpe {sh(d['ols'])}, Kalman {sh(d['kal'])}, {rk.num(format(d['cost'], 'g'), 'bp')} per fill, "
             f"same-close fills, {r['test_start']} to {r['test_end']}",
             "results/case_study.json: lags.0",
             res,
@@ -450,14 +410,14 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
         ),
         (
             "E5",
-            f"Costs {facts['commission']:g} bp commission + {facts['slippage']:g} bp slippage per fill",
+            f"Costs {rk.num(format(facts['commission'], 'g'), 'bp')} commission + {rk.num(format(facts['slippage'], 'g'), 'bp')} slippage per fill",
             f"src/backtester.py:{cost[0]}{EN}{cost[1]}",
             blob("src/backtester.py", src_sha, *cost),
             "Code",
         ),
         (
             "E6",
-            f"Parameters picked by train-window Sharpe over {facts['configs']} configurations per model; "
+            f"Parameters picked by train-window Sharpe over {rk.num(facts['configs'], 'configurations')} per model; "
             f"{facts['train_fraction']:.0%} train split",
             f"src/research.py:{split}, {tune[0]}{EN}{tune[1]}",
             blob("src/research.py", src_sha, *tune),
@@ -465,14 +425,14 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
         ),
         (
             "E7",
-            f"{d['m']} pairs = C({facts['universe']}, 2), Engle–Granger with Benjamini–Hochberg at 5%",
+            f"{rk.num(d['m'], 'pairs')} = C({facts['universe']}, 2), Engle–Granger with Benjamini–Hochberg at 5%",
             f"src/scanner.py:{uni}, {bh}",
             blob("src/scanner.py", src_sha, uni, bh),
             "Code",
         ),
         (
             "E8",
-            f"{d['raw_sig']} of {d['m']} pairs have raw p ≤ 0.05; {d['bh_sig']} pass BH (smallest adjusted p "
+            f"{d['raw_sig']} of {rk.num(d['m'], 'pairs')} have raw p ≤ 0.05; {d['bh_sig']} pass BH (smallest adjusted p "
             f"{d['min_adj']:.2f})",
             "results/case_study.json: scan",
             res,
@@ -480,7 +440,7 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
         ),
         (
             "E9",
-            f"Prices: {len(meta['tickers'])} tickers, adjusted closes {r['first_date']} to {r['last_date']}, "
+            f"Prices: {rk.num(len(meta['tickers']), 'tickers')}, adjusted closes {r['first_date']} to {r['last_date']}, "
             f"fetched {meta['fetched_at'][:10]}",
             "data/prices.csv, data/prices.meta.json",
             blob("data/prices.meta.json", res_sha),
@@ -494,19 +454,6 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
             "Reported",
         ),
     ]
-
-
-def keep_units(page):
-    """Non-breaking space between a number and its unit in the text of <main> (not in tags)."""
-    head, rest = page.split("<main", 1)
-    body, tail = rest.split("</main>", 1)
-    body = re.sub(r">([^<]+)<", lambda m: ">" + UNIT_RE.sub(NBSP, m.group(1)) + "<", body)
-    return head + "<main" + body + "</main>" + tail
-
-
-def toc(items):
-    lis = rk.join(Raw(f"<li>{rk.tag('a', label, href='#' + sid)}</li>") for sid, label in items)
-    return Raw(f'<nav class="toc wrap" aria-label="Contents"><ol>{lis}</ol></nav>')
 
 
 def equity_series(r, lag="0"):
@@ -545,7 +492,7 @@ def build_page(r, run, results_sha=None):
         s["name"]: next(v for dd, v in s["points"] if dd >= r["test_start"]) for s in eq
     }
     eq_desc = (
-        f"Equity indexed to 100 at {r['train_start']} for both models, {d['pair']}, {cost:g} bp per fill, same-close "
+        f"Equity indexed to 100 at {r['train_start']} for both models, {d['pair']}, {rk.num(format(cost, 'g'), 'bp')} per fill, same-close "
         f"fills. At the split ({r['test_start']}): rolling OLS {test_start_val['Rolling OLS']:.1f}, Kalman "
         f"{test_start_val['Kalman']:.1f}. At {r['test_end']}: {final['Rolling OLS']:.1f} and {final['Kalman']:.1f}."
     )
@@ -560,11 +507,11 @@ def build_page(r, run, results_sha=None):
             f"{d['pair']}{R('E2')}"
         ),
         support=Raw(
-            f"Rolling-OLS out-of-sample Sharpe {sh(d['ols'])} at the default setting ({cost:g} bp per fill, "
+            f"Rolling-OLS out-of-sample Sharpe {sh(d['ols'])} at the default setting ({rk.num(format(cost, 'g'), 'bp')} per fill, "
             f"same-close fills){R('E1')}; {sh(d['ols1'])} with next-day fills{R('E3')}."
         ),
         context=f"± {d['se']:.2f} standard error — neither Sharpe is distinguishable from zero on "
-        f"{d['years']:.1f} years. One pair; Yahoo adjusted closes {r['first_date'][:4]}–{r['last_date'][:4]}; "
+        f"{rk.num(format(d['years'], '.1f'), 'years')}. One pair; Yahoo adjusted closes {r['first_date'][:4]}–{r['last_date'][:4]}; "
         f"tuned on {facts['train_fraction']:.0%}, tested {r['test_start']} to {r['test_end']}.",
         actions=[("Source", REPO_URL, True), ("Reproduce", "#reproduce", False)],
         figure=rk.tag("p", "Equity, indexed to 100; shaded: test window", class_="card-label")
@@ -586,7 +533,7 @@ def build_page(r, run, results_sha=None):
         ),
     )
 
-    nav = toc(
+    nav = rk.toc(
         [
             ("findings", "Findings"),
             ("backtest", "Out of sample"),
@@ -633,9 +580,9 @@ def build_page(r, run, results_sha=None):
                         rk.tag(
                             "p",
                             Raw(
-                                f"Rolling-OLS test-window Sharpe at {cost:g} bp per fill; filling one close later "
+                                f"Rolling-OLS test-window Sharpe at {rk.num(format(cost, 'g'), 'bp')} per fill; filling one close later "
                                 f"raised it.{R('E3')} Across fill lags {d['lags'][0]}–{d['lags'][-1]} and costs "
-                                f"{d['costs'][0]}–{d['costs'][-1]} bp its own Sharpe ranged {sh(d['ols_lo'])} to "
+                                f"{rk.num(str(d['costs'][0]) + EN + str(d['costs'][-1]), 'bp')} its own Sharpe ranged {sh(d['ols_lo'])} to "
                                 f'{sh(d["ols_hi"])}. <a href="#robustness">Lag and cost sweep</a>'
                             ),
                         ),
@@ -652,7 +599,7 @@ def build_page(r, run, results_sha=None):
                         rk.tag(
                             "p",
                             Raw(
-                                f"{d['test_days']:,} test days ({d['years']:.1f} years) cannot separate a {sh(d['ols'])} "
+                                f"{rk.num(format(d['test_days'], ','), 'test days')} ({rk.num(format(d['years'], '.1f'), 'years')}) cannot separate a {sh(d['ols'])} "
                                 f"Sharpe from zero, so the report leans on the ranking across settings rather than the level."
                             ),
                         ),
@@ -720,9 +667,9 @@ def build_page(r, run, results_sha=None):
         rk.tag(
             "p",
             Raw(
-                f"Net of {cost:g} bp per fill, fills at the signal's close, $100,000 sized to equity, {d['pair']} daily "
+                f"Net of {rk.num(format(cost, 'g'), 'bp')} per fill, fills at the signal's close, $100,000 sized to equity, {d['pair']} daily "
                 f"adjusted closes. Parameters were picked on the unshaded train window and held fixed in the test window "
-                f"({d['test_days']:,} days). Single path; drawn every few days.{R('E1')}{R('E6')}"
+                f"({rk.num(format(d['test_days'], ','), 'days')}). Single path; drawn every few days.{R('E1')}{R('E6')}"
             ),
         ),
         question="Does each hedge make money after the period it was tuned on?",
@@ -861,7 +808,7 @@ def build_page(r, run, results_sha=None):
     # Robustness
     sw_take = "No fill lag or cost tested let the Kalman hedge catch up with the rolling hedge"
     sw_desc = "; ".join(
-        f"lag {c['lag']}, {c['cost_bps']:g} bp: OLS {sh(c['Rolling OLS']['test_sharpe'])}, Kalman "
+        f"lag {c['lag']}, {rk.num(format(c['cost_bps'], 'g'), 'bp')}: OLS {sh(c['Rolling OLS']['test_sharpe'])}, Kalman "
         f"{sh(c['Kalman']['test_sharpe'])}"
         for c in r["sweep"]
     )
@@ -878,7 +825,7 @@ def build_page(r, run, results_sha=None):
             "p",
             Raw(
                 f"Test-window Sharpe; each point re-tunes both models on the train window at that cost and fill lag "
-                f"({len(r['sweep'])} tunings). Same-close fills trade at the close that produced the signal; next-day fills "
+                f"({rk.num(len(r['sweep']), 'tunings')}). Same-close fills trade at the close that produced the signal; next-day fills "
                 f"trade one close later.{R('E2')}{R('E4')}"
             ),
         ),
@@ -902,7 +849,7 @@ def build_page(r, run, results_sha=None):
     )
     neg = [c for c in r["sweep"] if c["Rolling OLS"]["test_sharpe"] < 0]
     neg_text = "; ".join(
-        f"{'next-day' if c['lag'] else 'same-close'} fills at {c['cost_bps']:g} bp "
+        f"{'next-day' if c['lag'] else 'same-close'} fills at {rk.num(format(c['cost_bps'], 'g'), 'bp')} "
         f"({sh(c['Rolling OLS']['test_sharpe'])}, train {sh(c['Rolling OLS']['train_sharpe'])})"
         for c in neg
     )
@@ -942,7 +889,7 @@ def build_page(r, run, results_sha=None):
 
     # Scan
     pv_take = (
-        f"After correcting for {d['m']} tests, {d['bh_sig']} pair{'s' if d['bh_sig'] != 1 else ''} "
+        f"After correcting for {d['m']} tests, {rk.num(d['bh_sig'], 'pair' + ('s' if d['bh_sig'] != 1 else ''))} "
         f"remain{'s' if d['bh_sig'] == 1 else ''} significant"
     )
     pv_desc = (
@@ -1002,20 +949,21 @@ def build_page(r, run, results_sha=None):
     )
     scan_sec = rk.section(
         "scan",
-        f"The scanner screens {d['m']} pairs and corrects for multiple testing",
+        f"The scanner screens {rk.num(d['m'], 'pairs')} and corrects for multiple testing",
         scan_body,
         eyebrow="Pair scan",
     )
 
     # App
     shots = Raw(
-        '<div class="shots">'
+        '<div class="shots fig-chart">'
         '<figure class="wide"><img src="app-1280-light.png" width="1280" height="900" '
         f'alt="The statarb app on {esc(d["pair"])}: pair statistics, train and test windows, and the results table">'
-        "<figcaption>Backtest tab at 1280 px: pair tests on the train window, then train and test metrics per model."
-        "</figcaption></figure>"
+        f"<figcaption>Backtest tab at {rk.num(1280, 'px')}: pair tests on the train window, then train and test "
+        "metrics per model.</figcaption></figure>"
         '<figure><img src="app-390-light.png" width="390" height="844" '
-        'alt="The statarb app at phone width"><figcaption>The same view at 390 px.</figcaption></figure>'
+        'alt="The statarb app at phone width">'
+        f"<figcaption>The same view at {rk.num(390, 'px')}.</figcaption></figure>"
         "</div>"
     )
     app_sec = rk.section(
@@ -1045,18 +993,18 @@ def build_page(r, run, results_sha=None):
                 "Data",
                 Raw(
                     f"{esc(r['data']['source'])}; {d['pair']} and {facts['universe'] - 2} more tickers, "
-                    f"{r['first_date']} to {r['last_date']} ({r['rows']:,} days), fetched "
+                    f"{r['first_date']} to {r['last_date']} ({rk.num(format(r['rows'], ','), 'days')}), fetched "
                     f"{esc(r['data']['fetched_at'][:10])}, committed as <code>data/prices.csv</code>{R('E9')}"
                 ),
             ),
             (
                 "Split",
-                f"Warm-up {facts['warmup']} days from {r['warmup_start']}; train {r['train_start']} to "
+                f"Warm-up {rk.num(facts['warmup'], 'days')} from {r['warmup_start']}; train {r['train_start']} to "
                 f"{r['train_end']}; test {r['test_start']} to {r['test_end']}",
             ),
             (
                 "Tuning",
-                f"Grid search on train-window Sharpe: {facts['configs']} configurations for Kalman, "
+                f"Grid search on train-window Sharpe: {rk.num(facts['configs'], 'configurations')} for Kalman, "
                 f"{facts['configs_ols']} for rolling OLS; no adjustment for the number of configurations",
             ),
             (
@@ -1070,8 +1018,8 @@ def build_page(r, run, results_sha=None):
             (
                 "Costs",
                 Raw(
-                    f"{facts['commission']:g} bp commission + {facts['slippage']:g} bp slippage per fill on traded "
-                    f"notional; sweep 0–20 bp{R('E5')}"
+                    f"{rk.num(format(facts['commission'], 'g'), 'bp')} commission + {rk.num(format(facts['slippage'], 'g'), 'bp')} slippage per fill on traded "
+                    f"notional; sweep {rk.num(str(d['costs'][0]) + EN + str(d['costs'][-1]), 'bp')}{R('E5')}"
                 ),
             ),
             (
@@ -1087,7 +1035,7 @@ def build_page(r, run, results_sha=None):
             ("Not modelled", "Borrow fees, margin interest, market impact, partial fills"),
             (
                 "Run",
-                f"{run['command']} · {run['machine']}, {run['os']}, {run['python']} · {run['wall_seconds']:.0f} s · "
+                f"{run['command']} · {run['machine']}, {run['os']}, {run['python']} · {rk.num(format(run['wall_seconds'], '.0f'), 's')} · "
                 f"load average {run['load_average_before_run']} · {run['date']}",
             ),
         ]
@@ -1104,7 +1052,7 @@ def build_page(r, run, results_sha=None):
             (
                 "Short test window.",
                 Raw(
-                    f"{d['years']:.1f} years of test data give a Sharpe standard error about as large as the "
+                    f"{rk.num(format(d['years'], '.1f'), 'years')} of test data give a Sharpe standard error about as large as the "
                     f"rolling hedge's Sharpe itself, so neither model's level is distinguishable from zero."
                 ),
             ),
@@ -1116,7 +1064,7 @@ def build_page(r, run, results_sha=None):
             (
                 "Tuning on a small grid.",
                 "The best of "
-                f"{facts['configs']} configurations is chosen per model with no multiple-testing "
+                f"{rk.num(facts['configs'], 'configurations')} is chosen per model with no multiple-testing "
                 "adjustment; train Sharpe overstates what tuning buys.",
             ),
             (
@@ -1145,7 +1093,7 @@ def build_page(r, run, results_sha=None):
             ),
             (
                 Raw(
-                    f"Re-run the case study from the committed prices (about {run['wall_seconds']:.0f} s); "
+                    f"Re-run the case study from the committed prices (about {rk.num(format(run['wall_seconds'], '.0f'), 's')}); "
                     f"<code>results/case_study.json</code> should not change. Add <code>--fetch</code> to re-download "
                     f"(network; adjusted prices will differ slightly)."
                 ),
@@ -1219,7 +1167,7 @@ def build_page(r, run, results_sha=None):
         main=body,
         footer=footer,
     )
-    return keep_units(html.replace("</style>", LOCAL_CSS + "</style>", 1))
+    return html.replace("</style>", LOCAL_CSS + "</style>", 1)
 
 
 CARD_MAX_POINTS = 500

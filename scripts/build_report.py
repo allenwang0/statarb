@@ -1088,8 +1088,8 @@ def build_page(r, run, results_sha=None):
             (
                 "Short test window.",
                 Raw(
-                    f"{d['years']:.1f} years gives a Sharpe standard error near ±{d['se']:.2f}, so "
-                    f"neither model's test Sharpe is distinguishable from zero."
+                    f"{d['years']:.1f} years of test data give a Sharpe standard error about as large as the "
+                    f"rolling hedge's Sharpe itself, so neither model's level is distinguishable from zero."
                 ),
             ),
             (

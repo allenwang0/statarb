@@ -38,13 +38,17 @@ jobs:
       - name: Report kit matches its pinned hashes
         run: python report-kit/check_kit.py
       - name: Case study reproduces from data/prices.csv
+        # Floats are written rounded to 6 decimals; allow one unit in that place
+        # for BLAS/statsmodels noise, exact on everything else.
         run: |
+          cp results/case_study.json "$RUNNER_TEMP/committed.json"
           python scripts/case_study.py
-          git diff --exit-code -- results
-      - name: Committed report and README block are current
+          python scripts/json_close.py "$RUNNER_TEMP/committed.json" results/case_study.json --atol 1e-6
+          git checkout -- results
+      - name: Committed report, README block and card are current
         run: |
-          python scripts/build_report.py --readme README.md
-          git diff --exit-code -- docs README.md
+          python scripts/build_report.py --readme README.md --card site/card.json
+          git diff --exit-code -- docs README.md site/card.json
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:

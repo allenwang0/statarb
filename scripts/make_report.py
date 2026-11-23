@@ -451,7 +451,8 @@ def render_page(real, synth, sha, date, prices_note):
                     "Hedge ratio over the full period",
                     f"Shares of {tx} per share of {ty} · every {BETA_EVERY}th trading day",
                     caption="The Kalman estimate carries a ± 2 standard deviation band, "
-                    f"{band:.2f} wide on average, so it is barely visible at this scale. Shown from "
+                    f"{band:.2f} wide on average, so it is barely visible at this scale. "
+                    "Shown from "
                     f"the end of the warm-up ({_iso(ev.train_start)}); the test "
                     f"window starts {_iso(ev.test_start)}.",
                 ),

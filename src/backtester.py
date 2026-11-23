@@ -15,6 +15,10 @@ class Backtester:
     shares held since t-1, update the hedge model with bar t, decide the new
     position from z_t and fill at bar t's close.
 
+    fill_lag: bars between the decision and the fill. 0 (the default) fills
+    at the close that produced the signal; 1 fills at the next bar's close,
+    sized with the hedge ratio known at decision time.
+
     data: DataFrame with columns ['asset_x', 'asset_y'].
     model: 'kalman' (KalmanFilterReg) or 'ols' (RollingOLS over ols_window).
     z_method: 'model' uses innovation / sqrt(S); 'rolling' uses innovation /
@@ -36,6 +40,7 @@ class Backtester:
         z_window=DEFAULT_Z_WINDOW,
         model="kalman",
         ols_window=DEFAULT_WARMUP,
+        fill_lag=0,
     ):
         if z_method not in ("model", "rolling"):
             raise ValueError(f"z_method must be 'model' or 'rolling', got {z_method!r}")
@@ -43,6 +48,8 @@ class Backtester:
             raise ValueError(f"model must be 'kalman' or 'ols', got {model!r}")
         if model == "ols" and ols_window > warmup:
             raise ValueError("ols_window cannot exceed warmup")
+        if fill_lag < 0:
+            raise ValueError(f"fill_lag must be 0 or more, got {fill_lag}")
         self.data = data.copy()
         self.entry_threshold = entry_threshold
         self.exit_threshold = exit_threshold
@@ -52,6 +59,7 @@ class Backtester:
         self.z_window = z_window
         self.model = model
         self.ols_window = ols_window
+        self.fill_lag = int(fill_lag)
         self.initial_capital = initial_capital
         self.gross_notional = gross_notional  # gross exposure as a fraction of equity
         self.cost_rate = (commission_bps + slippage_bps) / BPS  # on traded notional
@@ -96,7 +104,9 @@ class Backtester:
         for c in ("hedge_ratio", "beta_sd", "alpha", "innovation", "z_score"):
             out[c][:] = np.nan
 
-        position = 0
+        position = 0  # held
+        decided = 0  # latest decision; equals position when fill_lag is 0
+        pending: list[tuple[int, int, float]] = []  # (fill bar, position, beta at decision)
         cash = float(self.initial_capital)
         shares_x = shares_y = 0.0
         innovations: list[float] = []
@@ -117,16 +127,21 @@ class Backtester:
                 else:
                     z = error / np.sqrt(S)
 
-                new_position = self._next_position(position, z)
-                if new_position != position:
+                new_position = self._next_position(decided, z)
+                if new_position != decided:
+                    decided = new_position
+                    pending.append((t + self.fill_lag, new_position, beta))
+
+                while pending and pending[0][0] == t:
+                    _, new_position, fill_beta = pending.pop(0)
                     target_x = target_y = 0.0
                     equity = cash + shares_x * px_x + shares_y * px_y
                     # A bankrupt account stays flat: sizing from equity <= 0
                     # would flip the trade.
                     if new_position != 0 and equity > 0:
-                        units = self.gross_notional * equity / (px_y + abs(beta) * px_x)
+                        units = self.gross_notional * equity / (px_y + abs(fill_beta) * px_x)
                         target_y = new_position * units
-                        target_x = -beta * target_y
+                        target_x = -fill_beta * target_y
                     elif new_position != 0:
                         new_position = 0
                     notional = abs(target_y - shares_y) * px_y + abs(target_x - shares_x) * px_x
@@ -136,6 +151,8 @@ class Backtester:
                     out["cost"][t] = cost
                     shares_x, shares_y = target_x, target_y
                     position = new_position
+                    if not pending:
+                        decided = position  # a bankrupt account stays flat
 
                 out["hedge_ratio"][t] = beta
                 out["beta_sd"][t] = hedge.beta_sd

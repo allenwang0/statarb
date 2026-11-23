@@ -12,6 +12,8 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the report tests link results to the commit that last changed them
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -21,3 +23,49 @@ jobs:
       - run: ruff format --check .
       - run: mypy src
       - run: pytest -q
+
+  report:
+    # Pages publishes docs/ as committed: the case study built from the
+    # committed price snapshot and results/case_study.json.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # build_report.py links results to the commit that last changed them
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Report kit matches its pinned hashes
+        run: python report-kit/check_kit.py
+      - name: Case study reproduces from data/prices.csv
+        # Floats are written rounded to 6 decimals; allow one unit in that place
+        # for BLAS/statsmodels noise, exact on everything else.
+        run: |
+          cp results/case_study.json "$RUNNER_TEMP/committed.json"
+          python scripts/case_study.py
+          python scripts/json_close.py "$RUNNER_TEMP/committed.json" results/case_study.json --atol 1e-6
+          git checkout -- results
+      - name: Committed report, README block and card are current
+        run: |
+          python scripts/build_report.py --readme README.md --card site/card.json
+          git diff --exit-code -- docs README.md site/card.json
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          path: docs
+
+  deploy-pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, report]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

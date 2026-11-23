@@ -206,3 +206,30 @@ def test_ols_baseline_goes_through_the_same_rules():
     gross = entries["shares_y"].abs() * px["asset_y"] + entries["shares_x"].abs() * px["asset_x"]
     # Entries come from flat, so equity before the fill is the previous bar's.
     assert np.allclose(gross, ols["equity"].shift(1)[entries.index])
+
+
+def test_one_bar_fill_lag_trades_the_next_close():
+    # Filling at the close that produced the signal assumes the trade can be
+    # done at a price already used to decide it. With fill_lag=1 every trade
+    # must happen exactly one bar after the lag-0 decision, at that bar's
+    # close, sized with the hedge ratio known when deciding.
+    data = step_pair()
+    kw = dict(entry_threshold=1.0, commission_bps=0.0, slippage_bps=0.0)
+    now = Backtester(data, **kw).run()
+    lag = Backtester(data, fill_lag=1, **kw).run()
+    traded_now = np.flatnonzero(now["traded_notional"].to_numpy())
+    traded_lag = np.flatnonzero(lag["traded_notional"].to_numpy())
+    assert len(traded_now) > 2  # precondition: it trades
+    first = traded_now[0]
+    assert traded_lag[0] == first + 1
+    assert lag["position"].iloc[first] == 0
+    assert lag["position"].iloc[first + 1] == now["position"].iloc[first]
+    beta = lag["hedge_ratio"].iloc[first]
+    assert np.isclose(lag["shares_x"].iloc[first + 1], -beta * lag["shares_y"].iloc[first + 1])
+    # Same decisions, different prices: the equity paths must differ.
+    assert not np.allclose(now["equity"], lag["equity"])
+
+
+def test_fill_lag_must_not_be_negative():
+    with pytest.raises(ValueError, match="fill_lag"):
+        Backtester(step_pair(), fill_lag=-1)

@@ -38,10 +38,14 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["venv"]
+extend-exclude = ["venv", "report-kit"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# HTML report generator: long markup strings and small chart-scale lambdas.
+"scripts/build_report.py" = ["E501", "E731"]
 
 [tool.mypy]
 python_version = "3.11"

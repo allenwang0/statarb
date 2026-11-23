@@ -1,0 +1,14 @@
+/* statarb report-local styles (loaded after report-kit). */
+.hero .figure{margin-top:32px}
+.note{font-size:14px;color:var(--ink-2);margin-top:12px;max-width:var(--measure)}
+.s .tablewrap{margin-top:24px}
+details .tablewrap{margin-top:12px}
+/* Environment values are prose, not numbers: let them wrap instead of scrolling. */
+.env td{white-space:normal;text-align:left;overflow-wrap:anywhere}
+/* Local override for a kit bug: charts.js never draws narrower than 260 px, but at
+   320 px the figure's content box is 248 px, so the SVG scales down and tick text
+   drops below 11 px. Trim the figure padding on the narrowest screens. */
+@media (max-width:359px){.figure{padding-left:13px;padding-right:13px}}
+/* Local override for a kit bug: the Copy button covers the first line of a long
+   code block. Start the code below it. */
+.codewrap pre{padding-top:44px}

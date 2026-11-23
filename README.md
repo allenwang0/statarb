@@ -2,6 +2,8 @@
 
 A pairs-trading research app. A Kalman filter (a model that updates with every new price) tracks the hedge ratio between two stocks day by day, and every strategy is tuned on one period and judged on a later, untouched one.
 
+[Report](https://allenwang0.github.io/statarb/): on PEP/KO the Kalman hedge lost to rolling OLS out of sample, and the diagnostics show why.
+
 ![The app on PEP/KO, 2018 to 2024](docs/app-1280-light.png)
 
 ## Highlights

@@ -1,8 +1,8 @@
 {
  "schema_version": 1,
  "repo": "statarb",
- "sha": "78507677298f7a390b77c74428b7803462e83618",
- "generated_at": "2026-11-23T04:57:51Z",
+ "sha": "f22b243665ab1ed565cbbd6350d410b42a30df3c",
+ "generated_at": "2026-11-23T05:17:38Z",
  "command": "python scripts/case_study.py && python3 scripts/build_report.py --card site/card.json",
  "data_note": "PEP/KO, test window 2022-03-14 to 2024-12-30, Yahoo adjusted daily closes (snapshot data/prices.csv); equity at 2 bp per fill, same-close fills.",
  "metric": {

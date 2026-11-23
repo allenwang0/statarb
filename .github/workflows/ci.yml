@@ -12,6 +12,8 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the report tests link results to the commit that last changed them
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}

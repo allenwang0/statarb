@@ -95,6 +95,22 @@ def facts_from_sources():
 
 
 def git_last_commit(rel):
+    """Commit that last changed a committed file. A shallow clone would report the
+    graft commit instead, so it is refused rather than silently producing other links."""
+    try:
+        shallow = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    if shallow == "true":
+        sys.exit(
+            "build_report.py needs full git history (git fetch --unshallow, or fetch-depth: 0 in CI)"
+        )
     try:
         out = subprocess.run(
             ["git", "log", "-1", "--format=%H", "--", rel],

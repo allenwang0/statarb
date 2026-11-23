@@ -108,7 +108,10 @@ def main():
                        "train_sharpe": clean(ev.runs[m].train["sharpe"])} for m in MODELS},
             })  # fmt: skip
     hedge = {m: series(base.runs[m].result["hedge_ratio"], 4) for m in MODELS}
-    table = scan(prices[list(DEFAULT_UNIVERSE)])
+    # BH-adjusted p-values tie; a total order keeps the file identical across platforms.
+    table = scan(prices[list(DEFAULT_UNIVERSE)]).sort_values(
+        ["adjusted_p", "p_value", "Y", "X"], kind="stable", ignore_index=True
+    )
     s = base.stats
     result = {
         "pair": {"y": PAIR[0], "x": PAIR[1]},

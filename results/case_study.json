@@ -41129,15 +41129,6 @@
    "passes_bh": false
   },
   {
-   "Y": "COST",
-   "X": "CL",
-   "p_value": 0.041742,
-   "half_life_days": 49.195449,
-   "beta": 17.037822,
-   "adjusted_p": 0.573959,
-   "passes_bh": false
-  },
-  {
    "Y": "PM",
    "X": "MO",
    "p_value": 0.033964,
@@ -41152,6 +41143,15 @@
    "p_value": 0.038177,
    "half_life_days": 66.965137,
    "beta": 0.472626,
+   "adjusted_p": 0.573959,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "CL",
+   "p_value": 0.041742,
+   "half_life_days": 49.195449,
+   "beta": 17.037822,
    "adjusted_p": 0.573959,
    "passes_bh": false
   },
@@ -41192,375 +41192,6 @@
    "passes_bh": false
   },
   {
-   "Y": "MO",
-   "X": "MDLZ",
-   "p_value": 0.613022,
-   "half_life_days": 186.585845,
-   "beta": 0.271055,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "KO",
-   "X": "MDLZ",
-   "p_value": 0.673344,
-   "half_life_days": 99.551079,
-   "beta": 0.766332,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "KO",
-   "X": "CL",
-   "p_value": 0.423125,
-   "half_life_days": 102.828154,
-   "beta": 0.688086,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "CL",
-   "X": "KMB",
-   "p_value": 0.46546,
-   "half_life_days": 106.480636,
-   "beta": 0.666002,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "KO",
-   "X": "KMB",
-   "p_value": 0.416524,
-   "half_life_days": 95.997772,
-   "beta": 0.520706,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "KO",
-   "X": "TGT",
-   "p_value": 0.829471,
-   "half_life_days": 297.421645,
-   "beta": 0.11096,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PEP",
-   "X": "PM",
-   "p_value": 0.557102,
-   "half_life_days": 167.537725,
-   "beta": 1.325605,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PEP",
-   "X": "MO",
-   "p_value": 0.467779,
-   "half_life_days": 189.650571,
-   "beta": 2.901188,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MDLZ",
-   "X": "TGT",
-   "p_value": 0.704248,
-   "half_life_days": 215.417711,
-   "beta": 0.145284,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PEP",
-   "X": "CL",
-   "p_value": 0.802005,
-   "half_life_days": 232.487932,
-   "beta": 1.919939,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PEP",
-   "X": "KMB",
-   "p_value": 0.440462,
-   "half_life_days": 105.99849,
-   "beta": 1.605341,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PEP",
-   "X": "TGT",
-   "p_value": 0.80784,
-   "half_life_days": 244.61826,
-   "beta": 0.376911,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MDLZ",
-   "X": "KMB",
-   "p_value": 0.331883,
-   "half_life_days": 81.680317,
-   "beta": 0.657937,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MDLZ",
-   "X": "CL",
-   "p_value": 0.705579,
-   "half_life_days": 154.114162,
-   "beta": 0.799113,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MO",
-   "X": "TGT",
-   "p_value": 0.887454,
-   "half_life_days": 278.373146,
-   "beta": 0.032643,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MO",
-   "X": "KMB",
-   "p_value": 0.797505,
-   "half_life_days": 229.018315,
-   "beta": 0.142487,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PM",
-   "X": "MDLZ",
-   "p_value": 0.904081,
-   "half_life_days": 284.903777,
-   "beta": 1.264616,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PM",
-   "X": "CL",
-   "p_value": 0.271996,
-   "half_life_days": 85.913675,
-   "beta": 1.31248,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PM",
-   "X": "KMB",
-   "p_value": 0.718871,
-   "half_life_days": 177.718271,
-   "beta": 0.824634,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PM",
-   "X": "TGT",
-   "p_value": 0.970963,
-   "half_life_days": 798.783998,
-   "beta": 0.185464,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "MO",
-   "X": "CL",
-   "p_value": 0.344888,
-   "half_life_days": 110.635625,
-   "beta": 0.327195,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "COST",
-   "p_value": 0.863685,
-   "half_life_days": 154.020825,
-   "beta": 0.063052,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "KO",
-   "X": "PEP",
-   "p_value": 0.508193,
-   "half_life_days": 98.143427,
-   "beta": 0.306407,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PG",
-   "X": "TGT",
-   "p_value": 0.896222,
-   "half_life_days": 370.837827,
-   "beta": 0.430363,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "PG",
-   "p_value": 0.993721,
-   "half_life_days": null,
-   "beta": 0.416353,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "KO",
-   "p_value": 0.970747,
-   "half_life_days": 8315.067783,
-   "beta": 1.280944,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "PEP",
-   "p_value": 1.0,
-   "half_life_days": null,
-   "beta": 0.377479,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "PM",
-   "p_value": 0.292846,
-   "half_life_days": 87.097698,
-   "beta": 0.710415,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "MO",
-   "p_value": 0.497809,
-   "half_life_days": 134.069466,
-   "beta": 1.803811,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "MDLZ",
-   "p_value": 1.0,
-   "half_life_days": null,
-   "beta": 1.003181,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "CL",
-   "p_value": 0.560767,
-   "half_life_days": 76.434702,
-   "beta": 1.125655,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "KMB",
-   "p_value": 0.913687,
-   "half_life_days": 206.343577,
-   "beta": 0.779949,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "WMT",
-   "X": "TGT",
-   "p_value": 1.0,
-   "half_life_days": null,
-   "beta": 0.144635,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "PG",
-   "p_value": 0.891213,
-   "half_life_days": 193.616724,
-   "beta": 6.449121,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "KO",
-   "p_value": 0.367913,
-   "half_life_days": 116.567459,
-   "beta": 20.863174,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "PEP",
-   "p_value": 0.981306,
-   "half_life_days": null,
-   "beta": 6.257478,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "MDLZ",
-   "p_value": 0.970631,
-   "half_life_days": null,
-   "beta": 16.167863,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "KMB",
-   "p_value": 0.733844,
-   "half_life_days": 149.283257,
-   "beta": 11.104401,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "COST",
-   "X": "TGT",
-   "p_value": 1.0,
-   "half_life_days": null,
-   "beta": 2.256397,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PG",
-   "X": "KO",
-   "p_value": 0.310681,
-   "half_life_days": 79.656562,
-   "beta": 3.023899,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
-   "Y": "PG",
-   "X": "PEP",
-   "p_value": 0.82793,
-   "half_life_days": 148.876245,
-   "beta": 0.981892,
-   "adjusted_p": 1.0,
-   "passes_bh": false
-  },
-  {
    "Y": "PG",
    "X": "PM",
    "p_value": 0.210903,
@@ -41579,11 +41210,38 @@
    "passes_bh": false
   },
   {
+   "Y": "PM",
+   "X": "CL",
+   "p_value": 0.271996,
+   "half_life_days": 85.913675,
+   "beta": 1.31248,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "PM",
+   "p_value": 0.292846,
+   "half_life_days": 87.097698,
+   "beta": 0.710415,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KMB",
+   "X": "TGT",
+   "p_value": 0.301336,
+   "half_life_days": 83.76847,
+   "beta": 0.176389,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
    "Y": "PG",
-   "X": "MDLZ",
-   "p_value": 0.634796,
-   "half_life_days": 99.91144,
-   "beta": 2.533566,
+   "X": "KO",
+   "p_value": 0.310681,
+   "half_life_days": 79.656562,
+   "beta": 3.023899,
    "adjusted_p": 1.0,
    "passes_bh": false
   },
@@ -41597,6 +41255,222 @@
    "passes_bh": false
   },
   {
+   "Y": "MDLZ",
+   "X": "KMB",
+   "p_value": 0.331883,
+   "half_life_days": 81.680317,
+   "beta": 0.657937,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MO",
+   "X": "CL",
+   "p_value": 0.344888,
+   "half_life_days": 110.635625,
+   "beta": 0.327195,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "KO",
+   "p_value": 0.367913,
+   "half_life_days": 116.567459,
+   "beta": 20.863174,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KO",
+   "X": "KMB",
+   "p_value": 0.416524,
+   "half_life_days": 95.997772,
+   "beta": 0.520706,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KO",
+   "X": "CL",
+   "p_value": 0.423125,
+   "half_life_days": 102.828154,
+   "beta": 0.688086,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PEP",
+   "X": "KMB",
+   "p_value": 0.440462,
+   "half_life_days": 105.99849,
+   "beta": 1.605341,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "CL",
+   "X": "KMB",
+   "p_value": 0.46546,
+   "half_life_days": 106.480636,
+   "beta": 0.666002,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PEP",
+   "X": "MO",
+   "p_value": 0.467779,
+   "half_life_days": 189.650571,
+   "beta": 2.901188,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "MO",
+   "p_value": 0.497809,
+   "half_life_days": 134.069466,
+   "beta": 1.803811,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KO",
+   "X": "PEP",
+   "p_value": 0.508193,
+   "half_life_days": 98.143427,
+   "beta": 0.306407,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PEP",
+   "X": "PM",
+   "p_value": 0.557102,
+   "half_life_days": 167.537725,
+   "beta": 1.325605,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "CL",
+   "p_value": 0.560767,
+   "half_life_days": 76.434702,
+   "beta": 1.125655,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MO",
+   "X": "MDLZ",
+   "p_value": 0.613022,
+   "half_life_days": 186.585845,
+   "beta": 0.271055,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PG",
+   "X": "MDLZ",
+   "p_value": 0.634796,
+   "half_life_days": 99.91144,
+   "beta": 2.533566,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KO",
+   "X": "MDLZ",
+   "p_value": 0.673344,
+   "half_life_days": 99.551079,
+   "beta": 0.766332,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MDLZ",
+   "X": "TGT",
+   "p_value": 0.704248,
+   "half_life_days": 215.417711,
+   "beta": 0.145284,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MDLZ",
+   "X": "CL",
+   "p_value": 0.705579,
+   "half_life_days": 154.114162,
+   "beta": 0.799113,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PM",
+   "X": "KMB",
+   "p_value": 0.718871,
+   "half_life_days": 177.718271,
+   "beta": 0.824634,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "KMB",
+   "p_value": 0.733844,
+   "half_life_days": 149.283257,
+   "beta": 11.104401,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MO",
+   "X": "KMB",
+   "p_value": 0.797505,
+   "half_life_days": 229.018315,
+   "beta": 0.142487,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PEP",
+   "X": "CL",
+   "p_value": 0.802005,
+   "half_life_days": 232.487932,
+   "beta": 1.919939,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PEP",
+   "X": "TGT",
+   "p_value": 0.80784,
+   "half_life_days": 244.61826,
+   "beta": 0.376911,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PG",
+   "X": "PEP",
+   "p_value": 0.82793,
+   "half_life_days": 148.876245,
+   "beta": 0.981892,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "KO",
+   "X": "TGT",
+   "p_value": 0.829471,
+   "half_life_days": 297.421645,
+   "beta": 0.11096,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
    "Y": "CL",
    "X": "TGT",
    "p_value": 0.842796,
@@ -41606,11 +41480,137 @@
    "passes_bh": false
   },
   {
-   "Y": "KMB",
+   "Y": "WMT",
+   "X": "COST",
+   "p_value": 0.863685,
+   "half_life_days": 154.020825,
+   "beta": 0.063052,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "MO",
    "X": "TGT",
-   "p_value": 0.301336,
-   "half_life_days": 83.76847,
-   "beta": 0.176389,
+   "p_value": 0.887454,
+   "half_life_days": 278.373146,
+   "beta": 0.032643,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "PG",
+   "p_value": 0.891213,
+   "half_life_days": 193.616724,
+   "beta": 6.449121,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PG",
+   "X": "TGT",
+   "p_value": 0.896222,
+   "half_life_days": 370.837827,
+   "beta": 0.430363,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PM",
+   "X": "MDLZ",
+   "p_value": 0.904081,
+   "half_life_days": 284.903777,
+   "beta": 1.264616,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "KMB",
+   "p_value": 0.913687,
+   "half_life_days": 206.343577,
+   "beta": 0.779949,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "MDLZ",
+   "p_value": 0.970631,
+   "half_life_days": null,
+   "beta": 16.167863,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "KO",
+   "p_value": 0.970747,
+   "half_life_days": 8315.067783,
+   "beta": 1.280944,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "PM",
+   "X": "TGT",
+   "p_value": 0.970963,
+   "half_life_days": 798.783998,
+   "beta": 0.185464,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "PEP",
+   "p_value": 0.981306,
+   "half_life_days": null,
+   "beta": 6.257478,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "PG",
+   "p_value": 0.993721,
+   "half_life_days": null,
+   "beta": 0.416353,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "COST",
+   "X": "TGT",
+   "p_value": 1.0,
+   "half_life_days": null,
+   "beta": 2.256397,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "MDLZ",
+   "p_value": 1.0,
+   "half_life_days": null,
+   "beta": 1.003181,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "PEP",
+   "p_value": 1.0,
+   "half_life_days": null,
+   "beta": 0.377479,
+   "adjusted_p": 1.0,
+   "passes_bh": false
+  },
+  {
+   "Y": "WMT",
+   "X": "TGT",
+   "p_value": 1.0,
+   "half_life_days": null,
+   "beta": 0.144635,
    "adjusted_p": 1.0,
    "passes_bh": false
   }

@@ -43,19 +43,27 @@ def text_of(page):
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", page)))
 
 
-def test_hero_is_the_positive_out_of_sample_sharpe(page):
-    # Owner rule: the hero states a positive, conditioned result. It is the
-    # rolling-OLS test-window Sharpe at the default cost with same-close fills;
-    # if that ever turns negative or stops beating Kalman, the hero must change.
+def test_hero_is_the_robust_comparison_not_a_noisy_level(page):
+    # Owner rule: the hero states a positive, conditioned result. The level of
+    # either Sharpe is within one standard error of zero, so the hero is the
+    # count of lag x cost settings the rolling hedge won; if it ever wins none,
+    # the hero must change.
+    cells = RESULTS["sweep"]
+    ahead = sum(c["Rolling OLS"]["test_sharpe"] > c["Kalman"]["test_sharpe"] for c in cells)
+    assert ahead > 0
+    hero = re.search(r'<p class="hero-metric"><span class="value">([^<]+)</span>', page).group(1)
+    assert hero == f"{ahead} of {len(cells)}"
     lag0 = RESULTS["lags"]["0"]
     ols, kal = lag0["Rolling OLS"]["test"]["sharpe"], lag0["Kalman"]["test"]["sharpe"]
-    assert ols > 0 and ols > kal
-    hero = re.search(r'<p class="hero-metric"><span class="value">([^<]+)</span>', page).group(1)
-    assert hero == sh(ols)
-    assert MINUS not in hero
     text = text_of(page)
-    assert f"{ols - kal:.2f} above the Kalman filter" in text
+    assert f"Rolling-OLS out-of-sample Sharpe {sh(ols)} at the default setting" in text
+    assert f"a gap of {ols - kal:.2f}" in text
     assert f"tested {RESULTS['test_start']} to {RESULTS['test_end']}" in text
+
+
+def test_numbers_and_units_do_not_wrap_apart(page):
+    main = html.unescape(re.sub(r"<[^>]+>", "", page.split("<main", 1)[1]))
+    assert not re.search(r"\d[ \n](bp|days?|years?)\b", main)
 
 
 def test_lag_and_cost_claims_match_the_sweep(page):
@@ -63,14 +71,10 @@ def test_lag_and_cost_claims_match_the_sweep(page):
     # report the next-day numbers and how many settings keep the ranking.
     text = text_of(page)
     lag1 = RESULTS["lags"]["1"]
-    assert f"With next-day fills: {sh(lag1['Rolling OLS']['test']['sharpe'])}" in text
+    assert f"{sh(lag1['Rolling OLS']['test']['sharpe'])} with next-day fills" in text
     cells = RESULTS["sweep"]
     ahead = sum(c["Rolling OLS"]["test_sharpe"] > c["Kalman"]["test_sharpe"] for c in cells)
-    assert (
-        f"ahead in all {len(cells)}" in text
-        if ahead == len(cells)
-        else f"{ahead} of {len(cells)}" in text
-    )
+    assert f"{ahead} of {len(cells)}" in text
     lo = min(c["Rolling OLS"]["test_sharpe"] for c in cells)
     assert sh(lo) in text, "the worst rolling-OLS setting must be disclosed"
     assert {c["lag"] for c in cells} == {0, 1}
@@ -89,7 +93,7 @@ def test_test_window_length_and_standard_error(page):
     days = sum(1 for d, _ in eq if d >= RESULTS["test_start"])
     sr = RESULTS["lags"]["0"]["Rolling OLS"]["test"]["sharpe"]
     se = ((1 + sr * sr / 2) / (days / 252)) ** 0.5
-    assert f"Sharpe ± {se:.2f}" in text_of(page)
+    assert f"± {se:.2f} standard error" in text_of(page)
 
 
 def test_every_evidence_reference_resolves(page):

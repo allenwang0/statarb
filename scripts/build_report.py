@@ -33,6 +33,10 @@ README_END = "<!-- results:end -->"
 EN = "–"
 MINUS = "−"
 TRADING_DAYS = 252
+NBSP = "\u00a0"
+UNIT_RE = re.compile(
+    r"(?<=\d) (?=(?:bp|days?|years?|s|tickers|pairs|configurations|tunings|test days)\b)"
+)
 
 LOCAL_CSS = """
 .toc { margin-top: calc(-1 * var(--space-5)); }
@@ -264,7 +268,8 @@ def time_chart(
             f'<path class="{cls}{" c-dash" if s.get("dash") else ""}" stroke-width="{s.get("w", 1.5)}" d="{d}"/>'
         )
     parts.extend(key_parts)
-    parts.append(svg_text(ml, mt - 16, y_title, "c-title"))
+    if y_title:
+        parts.append(svg_text(ml, mt - 16, y_title, "c-title"))
     return rk.svg(uid, width, height, title, desc, "".join(parts))
 
 
@@ -475,6 +480,14 @@ def evidence_rows(r, d, facts, src_sha, res_sha):
     ]
 
 
+def keep_units(page):
+    """Non-breaking space between a number and its unit in the text of <main> (not in tags)."""
+    head, rest = page.split("<main", 1)
+    body, tail = rest.split("</main>", 1)
+    body = re.sub(r">([^<]+)<", lambda m: ">" + UNIT_RE.sub(NBSP, m.group(1)) + "<", body)
+    return head + "<main" + body + "</main>" + tail
+
+
 def toc(items):
     lis = rk.join(Raw(f"<li>{rk.tag('a', label, href='#' + sid)}</li>") for sid, label in items)
     return Raw(f'<nav class="toc wrap" aria-label="Contents"><ol>{lis}</ol></nav>')
@@ -525,18 +538,18 @@ def build_page(r, run, results_sha=None):
         title="statarb",
         subtitle="A pairs-trading research app that compares a Kalman-filter hedge ratio with a rolling least-squares "
         "hedge, tuning each on one period and judging it on a later, untouched one.",
-        value=sh(d["ols"]),
+        value=f"{d['ahead']} of {d['cells']}",
         label=Raw(
-            f"out-of-sample Sharpe of the rolling-OLS hedge on {d['pair']}, after {cost:g} bp costs{R('E1')}"
+            f"fill-lag and cost settings in which the rolling-OLS hedge beat the Kalman filter out of sample, "
+            f"{d['pair']}{R('E2')}"
         ),
         support=Raw(
-            f"{d['gap']:.2f} above the Kalman filter on the same signals, sizing and costs, and ahead in all "
-            f"{d['cells']} fill-lag and cost settings tested{R('E2')}. With next-day fills: "
-            f"{sh(d['ols1'])}{R('E3')}."
+            f"Rolling-OLS out-of-sample Sharpe {sh(d['ols'])} at the default setting ({cost:g} bp per fill, "
+            f"same-close fills){R('E1')}; {sh(d['ols1'])} with next-day fills{R('E3')}."
         ),
-        context=f"One pair; Yahoo adjusted closes {r['first_date'][:4]}–{r['last_date'][:4]}; tuned on "
-        f"{facts['train_fraction']:.0%}, tested {r['test_start']} to {r['test_end']} ({d['years']:.1f} years). "
-        f"Sharpe ± {d['se']:.2f} (one standard error).",
+        context=f"± {d['se']:.2f} standard error — neither Sharpe is distinguishable from zero on "
+        f"{d['years']:.1f} years. One pair; Yahoo adjusted closes {r['first_date'][:4]}–{r['last_date'][:4]}; "
+        f"tuned on {facts['train_fraction']:.0%}, tested {r['test_start']} to {r['test_end']}.",
         actions=[("Source", REPO_URL, True), ("Reproduce", "#reproduce", False)],
         figure=rk.tag("p", "Equity, indexed to 100; shaded: test window", class_="card-label")
         + rk.variants(
@@ -548,7 +561,7 @@ def build_page(r, run, results_sha=None):
                     height=h,
                     title=eq_take,
                     desc=eq_desc,
-                    y_title="Equity (start = 100)",
+                    y_title=None,
                     fmt_y=lambda t: f"{t:g}",
                     split=r["test_start"],
                 )
@@ -581,7 +594,7 @@ def build_page(r, run, results_sha=None):
                     [
                         rk.tag(
                             "h3",
-                            "The comparison held under every lag and cost tested",
+                            "Same-close fills do not explain the result",
                             class_="card-heading",
                         ),
                         rk.comparison(
@@ -604,9 +617,9 @@ def build_page(r, run, results_sha=None):
                         rk.tag(
                             "p",
                             Raw(
-                                f"Test-window Sharpe at {cost:g} bp per fill. Across fill lags {d['lags'][0]}–{d['lags'][-1]} "
-                                f"and costs {d['costs'][0]}–{d['costs'][-1]} bp, rolling OLS beat Kalman {d['ahead']} of "
-                                f"{d['cells']} times{R('E2')}; its own Sharpe ranged {sh(d['ols_lo'])} to "
+                                f"Rolling-OLS test-window Sharpe at {cost:g} bp per fill; filling one close later "
+                                f"raised it.{R('E3')} Across fill lags {d['lags'][0]}–{d['lags'][-1]} and costs "
+                                f"{d['costs'][0]}–{d['costs'][-1]} bp its own Sharpe ranged {sh(d['ols_lo'])} to "
                                 f'{sh(d["ols_hi"])}. <a href="#robustness">Lag and cost sweep</a>'
                             ),
                         ),
@@ -725,7 +738,7 @@ def build_page(r, run, results_sha=None):
                 Raw(
                     f"On the train window both hedges earned money: Sharpe {sh(d['ols_train'])} for rolling OLS and "
                     f"{sh(d['kal_train'])} for Kalman. In the test window the rolling hedge kept a {sh(d['ols'])} Sharpe and the "
-                    f"Kalman hedge fell to {sh(d['kal'])}.{R('E1')} The tuned settings were entry z "
+                    f"Kalman hedge fell to {sh(d['kal'])}, a gap of {d['gap']:.2f}.{R('E1')} The tuned settings were entry z "
                     f"{ols_p['entry_threshold']:g}, exit {ols_p['exit_threshold']:g}, {ols_p['ols_window']}-day window for OLS; "
                     f"entry {kal_p['entry_threshold']:g}, exit {kal_p['exit_threshold']:g}, delta {kal_p['delta']:g} for Kalman."
                 ),
@@ -830,9 +843,7 @@ def build_page(r, run, results_sha=None):
     )
 
     # Robustness
-    sw_take = (
-        f"Rolling OLS stayed ahead of Kalman in {d['ahead']} of {d['cells']} lag and cost settings"
-    )
+    sw_take = "No fill lag or cost tested let the Kalman hedge catch up with the rolling hedge"
     sw_desc = "; ".join(
         f"lag {c['lag']}, {c['cost_bps']:g} bp: OLS {sh(c['Rolling OLS']['test_sharpe'])}, Kalman "
         f"{sh(c['Kalman']['test_sharpe'])}"
@@ -1192,7 +1203,70 @@ def build_page(r, run, results_sha=None):
         main=body,
         footer=footer,
     )
-    return html.replace("</style>", LOCAL_CSS + "</style>", 1)
+    return keep_units(html.replace("</style>", LOCAL_CSS + "</style>", 1))
+
+
+CARD_MAX_POINTS = 500
+
+
+def git_commit_time(rel):
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", "--", rel],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return int(out) if out else None
+
+
+def build_card(r, sha, stamp):
+    """Portfolio card (schema_version 1) with the report's hero: settings won, out of all tested."""
+    d = derive(r, facts_from_sources())
+    takeaway = (
+        f"Out of sample on {d['pair']}, a rolling-OLS hedge beat a Kalman filter in {d['ahead']} of "
+        f"{d['cells']} fill-lag and cost settings; Sharpe {sh(d['ols'])} at {d['cost']:g} bp."
+    )
+    if len(takeaway) > 140:
+        raise ValueError(f"card takeaway has {len(takeaway)} characters, limit 140")
+    series = []
+    for name, style in (("Rolling OLS", "solid"), ("Kalman", "dashed")):
+        pts = [[a, b] for a, b in r["lags"]["0"][name]["equity"] if a >= r["test_start"]]
+        step = max(1, -(-len(pts) // CARD_MAX_POINTS))
+        series.append({"name": name, "style": style, "points": pts[::step]})
+    return {
+        "schema_version": 1,
+        "repo": "statarb",
+        "sha": sha,
+        "generated_at": datetime.datetime.fromtimestamp(stamp, datetime.UTC).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+        "command": "python scripts/case_study.py && python3 scripts/build_report.py --card site/card.json",
+        "data_note": (
+            f"{d['pair']}, test window {r['test_start']} to {r['test_end']}, Yahoo adjusted daily closes "
+            f"(snapshot data/prices.csv); equity at {d['cost']:g} bp per fill, same-close fills."
+        ),
+        "metric": {
+            "label": f"Fill-lag and cost settings in which rolling OLS beat Kalman out of sample (of {d['cells']})",
+            "value": d["ahead"],
+            "unit": "settings",
+            "higher_is_better": True,
+        },
+        "takeaway": takeaway,
+        "chart": {
+            "type": "line",
+            "x_label": "Date",
+            "x_unit": "",
+            "x_scale": "time",
+            "y_label": "Net equity",
+            "y_unit": "USD",
+            "y_scale": "linear",
+            "series": series,
+        },
+    }
 
 
 def readme_block(r):
@@ -1228,6 +1302,7 @@ def main():
     parser.add_argument("--run", default=str(ROOT / "results" / "run.json"))
     parser.add_argument("--out", default=str(ROOT / "docs" / "index.html"))
     parser.add_argument("--readme", help="rewrite the results block between the README markers")
+    parser.add_argument("--card", help="also write the portfolio card JSON to this path")
     args = parser.parse_args()
     results = load(args.results)
     path = pathlib.Path(args.results).resolve()
@@ -1237,6 +1312,10 @@ def main():
     out.write_text(build_page(results, load(args.run), sha), encoding="utf-8")
     if args.readme:
         update_readme(args.readme, results)
+    if args.card:
+        rel = str(path.relative_to(ROOT))
+        card = build_card(results, sha or "0" * 40, git_commit_time(rel) or 0)
+        pathlib.Path(args.card).write_text(json.dumps(card, indent=1, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":

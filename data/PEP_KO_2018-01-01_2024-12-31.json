@@ -1,0 +1,12 @@
+{
+ "source": "Yahoo Finance daily closes, adjusted for splits and dividends",
+ "tool": "yfinance 1.8.0, yf.download(auto_adjust=True)",
+ "tickers": [
+  "PEP",
+  "KO"
+ ],
+ "start": "2018-01-01",
+ "end": "2024-12-31",
+ "downloaded": "2026-11-23",
+ "command": "python scripts/make_report.py --save-prices data/PEP_KO_2018-01-01_2024-12-31.csv"
+}

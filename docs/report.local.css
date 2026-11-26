@@ -1,0 +1,7 @@
+/* statarb report-local styles (loaded after report-kit). */
+.hero .figure{margin-top:32px}
+.note{font-size:14px;color:var(--ink-2);margin-top:12px;max-width:var(--measure)}
+.s .tablewrap{margin-top:24px}
+details .tablewrap{margin-top:12px}
+/* Environment values are prose, not numbers: let them wrap instead of scrolling. */
+.env td{white-space:normal;text-align:left;overflow-wrap:anywhere}
